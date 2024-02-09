@@ -1,0 +1,83 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: scroll;
+  }
+  
+  header {
+    background-image: linear-gradient(200deg, orange,white );
+    color: black;
+    text-align: center;
+    padding: 20px;
+    text-shadow: 5px 5px 2px rgb(90, 72, 30);
+  }
+
+  a{
+    color: black
+  }
+ 
+
+  div.image{
+    float: left;
+    width: 100px;
+    height: 100px;
+    
+    
+  }
+  h1 {
+    margin: 0;
+    font-family: cursive;
+  }
+  div.kundali{
+    text-shadow: 0 0 0;
+  }
+  
+  h3 {
+    margin-top: 5px;
+    font-weight: bolder;
+    font-style: italic;
+    color: brown;
+  }
+  
+  main {
+    padding: 20px;
+    background-image: linear-gradient(180deg, white, rgb(94, 215, 94));
+  }
+   div.scores{
+    font-weight: bold;
+    color: orangered
+  }
+  div.link{
+    text-shadow: 0 0 0;
+  }
+
+  
+  h2 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 2px gray;
+    animation: text-animation 3s infinite;
+
+  }
+  
+  p {
+    line-height: 1.5;
+  }
+  
+  ul {
+    padding-left: 20px;
+  }
+  
+  
+  footer {
+    background-color:white;
+    color:black;
+    box-shadow: 5px 5px 5px black;
+    text-align: center;
+    padding: 15px;
+  }
+   
+ 
+  
