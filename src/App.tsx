@@ -45,11 +45,12 @@ export default function App() {
       <nav className="nav">
         <div className="container nav-inner">
           <NavBrand href="#top" />
-          <div className="nav-links">
+          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <a href="#projects">Projects</a>
             <a href="#experience">Experience</a>
             <a href="#skills">Skills</a>
             <a href="#contact">Contact</a>
+            <a href="https://drive.google.com/file/d/14QKXTm0i_Jrr9bYPSBdFAmIEFGxusHWz/view?usp=drive_link" target="_blank" rel="noreferrer" className="button" style={{ padding: '6px 14px', fontSize: '11px', minHeight: 'unset' }}>Resume</a>
           </div>
         </div>
       </nav>
