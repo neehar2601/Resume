@@ -7,6 +7,7 @@ import { ProjectCard } from './components/ProjectCard'
 import { SystemMap } from './components/SystemMap'
 import { projects } from './data/projects'
 import './index.css'
+import { NavBrand } from './components/NavBrand'
 
 const links = {
   github: 'https://github.com/neehar2601',
@@ -43,7 +44,7 @@ export default function App() {
     <div className="app-shell">
       <nav className="nav">
         <div className="container nav-inner">
-          <a className="brand" href="#top">neehara<span className="brand-dot">.</span>nellikalaya</a>
+          <NavBrand href="#top" />
           <div className="nav-links">
             <a href="#projects">Projects</a>
             <a href="#experience">Experience</a>

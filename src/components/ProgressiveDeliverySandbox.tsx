@@ -1,3 +1,4 @@
+import { NavBrand } from './NavBrand'
 import { useEffect, useMemo, useState } from 'react'
 import { ArchitectureDiagram } from './sandbox/ArchitectureDiagram'
 import { MetricsPanel } from './sandbox/MetricsPanel'
@@ -243,7 +244,7 @@ export function ProgressiveDeliverySandbox() {
     <div className="sandbox-shell">
       <header className="sandbox-topbar">
         <div className="container sandbox-topbar-inner">
-          <a className="brand" href="/">neehara<span className="brand-dot">.</span>nellikalaya</a>
+          <NavBrand href="/" />
           <div className="sandbox-breadcrumb">LAB / PROGRESSIVE DELIVERY / {version}</div>
           <a className="sandbox-back" href="/">← portfolio</a>
         </div>

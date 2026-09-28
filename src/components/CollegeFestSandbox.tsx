@@ -1,3 +1,4 @@
+import { NavBrand } from './NavBrand'
 import { useEffect, useMemo, useState } from 'react'
 
 type DeployState = 'idle' | 'running' | 'success' | 'failed'
@@ -177,7 +178,7 @@ export function CollegeFestSandbox() {
     <div className="sandbox-shell">
       <nav className="sandbox-topbar">
         <div className="container sandbox-topbar-inner">
-          <a className="brand" href="/#projects">neehara<span className="brand-dot">.</span>nellikalaya</a>
+          <NavBrand href="/#projects" />
           <div className="sandbox-breadcrumb">SANDBOX / COLLEGEFEST DEPLOYMENT · v0.5.7</div>
           <a className="sandbox-back" href="/#projects">← back to projects</a>
         </div>
