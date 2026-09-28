@@ -1,5 +1,6 @@
 import { NavBrand } from './NavBrand'
 import { useEffect, useState } from 'react'
+import { PipelineMap } from './sandbox/PipelineMap'
 
 type DeployState = 'idle' | 'running' | 'success' | 'failed'
 type Stage = 'github' | 'gha' | 's3-test' | 'e2e' | 's3-prod' | 'cloudfront' | 'live'
@@ -97,6 +98,7 @@ export function CicdPipelineSandbox() {
                 </div>
               </div>
 
+              <PipelineMap activeIndex={activeIndex} deployState={deployState} />
               <div className="pipeline-track" style={{ marginBottom: '2rem' }}>
                 {stages.map((stage, index) => (
                   <div className="track-item" key={stage.id}>
