@@ -243,7 +243,7 @@ export function ProgressiveDeliverySandbox() {
     <div className="sandbox-shell">
       <header className="sandbox-topbar">
         <div className="container sandbox-topbar-inner">
-          <a className="brand" href="/">neehara<span className="brand-dot">.</span>dev</a>
+          <a className="brand" href="/">Neehara Nellikalaya</a>
           <div className="sandbox-breadcrumb">LAB / PROGRESSIVE DELIVERY / {version}</div>
           <a className="sandbox-back" href="/">← portfolio</a>
         </div>

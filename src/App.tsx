@@ -43,7 +43,7 @@ export default function App() {
     <div className="app-shell">
       <nav className="nav">
         <div className="container nav-inner">
-          <a className="brand" href="#top">neehara<span className="brand-dot">.</span>dev</a>
+          <a className="brand" href="#top">Neehara Nellikalaya</a>
           <div className="nav-links">
             <a href="#projects">Projects</a>
             <a href="#experience">Experience</a>
