@@ -469,7 +469,15 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
                 <CafeArrow />
               </>
             )}
-            <CafeNode title={`EC2 Web × ${instanceCount}`} subtitle={hasAlb ? 'private app subnets' : 'early app host'} icon="EC2" active />
+            {level === 2 ? (
+              <div style={{ display: 'flex', gap: '8px', padding: '10px 12px', border: '1px solid rgba(79, 209, 197, 0.3)', borderRadius: '12px', background: 'rgba(12, 22, 29, 0.8)', position: 'relative' }}>
+                <span style={{ position: 'absolute', top: '-8px', left: '12px', background: '#0a0f15', padding: '0 6px', fontSize: '8px', color: 'var(--teal)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Single EC2 Host</span>
+                <CafeNode title="Web Server" subtitle="dynamic app" icon="EC2" active />
+                <CafeNode title="Local DB" subtitle="on same host" icon="DB" active />
+              </div>
+            ) : (
+              <CafeNode title={`EC2 Web × ${instanceCount}`} subtitle={hasAlb ? 'private app subnets' : 'early app host'} icon="EC2" active />
+            )}
             {hasRds && (
               <>
                 <CafeArrow />
@@ -485,9 +493,9 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
           <div className="reporting-mini-flow">
             <CafeNode title="EventBridge" subtitle="daily trigger" icon="EV" active />
             <CafeArrow />
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(79, 209, 197, 0.05)', padding: '6px', borderRadius: '8px', border: '1px dashed rgba(79, 209, 197, 0.2)' }}>
-              <CafeNode title="RDS" subtitle="secure read" icon="DB" active />
-              <div style={{ color: 'var(--amber)', fontSize: '14px', fontWeight: 'bold' }}>↔</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-24px', height: '24px', borderLeft: '1px dashed var(--amber)', zIndex: -1 }}></div>
+              <div style={{ position: 'absolute', top: '-38px', color: 'var(--amber)', fontSize: '9px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>↑ connects to RDS</div>
               <CafeNode title="Lambda 1" subtitle="DB read + process" icon="L1" active />
             </div>
             <CafeArrow />
