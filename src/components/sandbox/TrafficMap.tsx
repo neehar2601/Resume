@@ -7,29 +7,37 @@ export function TrafficMap({ traffic }: { traffic: number }) {
     { id: 'user', x: 50, y: 200, title: 'Users', subtitle: 'external requests', badge: 'TRAFFIC' },
     { id: 'istio', x: 250, y: 200, title: 'Istio', subtitle: 'ingress gateway', accent: true, badge: 'MESH' },
     { 
-      id: 'stable', x: 550, y: 100, 
+      id: 'stable', x: 500, y: 100, 
       title: isPromoted ? 'Canary slot' : 'Stable v1', 
       subtitle: isPromoted ? 'waiting for next deployment' : 'baseline deployment', 
       badge: 'PODS',
       muted: isPromoted
     },
     { 
-      id: 'canary', x: 550, y: 300, 
+      id: 'canary', x: 500, y: 300, 
       title: isPromoted ? 'Stable v2' : 'Canary v2', 
       subtitle: isPromoted ? 'promoted deployment' : 'candidate deployment', 
       badge: 'PODS', 
       accent: traffic > 0 && traffic < 100 
     },
-    { id: 'flagger', x: 850, y: 200, title: 'Flagger', subtitle: 'analysis + routing', badge: 'CONTROL' },
+    { id: 'prom', x: 800, y: 100, title: 'Prometheus', subtitle: 'metric scraping', badge: 'OBSERVE' },
+    { id: 'flagger', x: 800, y: 300, title: 'Flagger', subtitle: 'analysis + routing', badge: 'CONTROL' },
   ]
   
   const paths = [
     { id: 'inbound', d: 'M120 200 L230 200', label: 'inbound HTTP', tone: 'teal', duration: '2.0s', delay: '0s', active: true },
-    { id: 'to-stable', d: 'M270 185 C350 185 450 115 530 115', label: isPromoted ? '' : `${100 - traffic}% to v1`, tone: 'teal', duration: '2.5s', delay: '-1.0s', active: traffic < 100 },
-    { id: 'to-canary', d: 'M270 215 C350 215 450 285 530 285', label: isPromoted ? '100% to v2' : `${traffic}% to v2`, tone: isPromoted ? 'teal' : 'amber', duration: '2.5s', delay: '-0.5s', active: traffic > 0 },
-    { id: 'prom1', d: 'M570 100 C670 100 750 185 830 185', label: 'telemetry', tone: 'muted', duration: '3.0s', delay: '0s', active: !isPromoted },
-    { id: 'prom2', d: 'M570 300 C670 300 750 215 830 215', label: 'telemetry', tone: 'muted', duration: '3.0s', delay: '-1.5s', active: traffic > 0 },
-    { id: 'control', d: 'M830 230 C700 350 400 350 270 230', label: 'update weight', tone: 'amber', duration: '4.0s', delay: '-2.0s', active: traffic > 0 && traffic < 100 },
+    { id: 'to-stable', d: 'M270 185 C320 185 400 115 450 115', label: isPromoted ? '' : `${100 - traffic}% to v1`, tone: 'teal', duration: '2.5s', delay: '-1.0s', active: traffic < 100 },
+    { id: 'to-canary', d: 'M270 215 C320 215 400 285 450 285', label: isPromoted ? '100% to v2' : `${traffic}% to v2`, tone: isPromoted ? 'teal' : 'amber', duration: '2.5s', delay: '-0.5s', active: traffic > 0 },
+    
+    // Prometheus scraping the pods
+    { id: 'scrape1', d: 'M550 100 L750 100', label: 'scrape', tone: 'muted', duration: '2.5s', delay: '0s', active: !isPromoted },
+    { id: 'scrape2', d: 'M550 285 C620 285 680 115 750 115', label: 'scrape', tone: 'muted', duration: '2.5s', delay: '-1.2s', active: traffic > 0 },
+    
+    // Flagger queries Prometheus
+    { id: 'query', d: 'M800 140 L800 260', label: 'evaluate metrics', tone: 'amber', duration: '2.0s', delay: '-0.5s', active: traffic > 0 && traffic < 100 },
+    
+    // Flagger updates Istio (sweeps under the whole architecture)
+    { id: 'control', d: 'M780 320 C650 420 400 420 250 230', label: 'update VirtualService', tone: 'amber', duration: '3.5s', delay: '-1.0s', active: traffic > 0 && traffic < 100 },
   ]
 
   return (
@@ -46,9 +54,9 @@ export function TrafficMap({ traffic }: { traffic: number }) {
         </div>
       </div>
       
-      <div className="gallery-live-map-canvas" style={{ minHeight: '380px' }}>
+      <div className="gallery-live-map-canvas" style={{ minHeight: '440px' }}>
         <div className="gallery-grid-overlay" />
-        <svg className="gallery-flow-svg" viewBox="0 0 1000 400" role="img" aria-label="Live traffic routing">
+        <svg className="gallery-flow-svg" viewBox="0 0 1000 450" role="img" aria-label="Live traffic routing">
           <defs>
             <filter id="flow-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -78,7 +86,7 @@ export function TrafficMap({ traffic }: { traffic: number }) {
             </g>
           ))}
           {paths.filter(p => p.active).map((flow) => (
-             <text key={`label-${flow.id}`} style={{ fill: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>
+             <text key={`label-${flow.id}`} style={{ fill: 'var(--muted)', fontSize: '11px', fontWeight: 600 }}>
                <textPath href={`#path-${flow.id}`} startOffset="50%" textAnchor="middle">
                  {flow.label}
                </textPath>
@@ -90,11 +98,11 @@ export function TrafficMap({ traffic }: { traffic: number }) {
           <div
             key={node.id}
             className={`gallery-live-node ${node.accent ? 'accent' : ''} ${(node as any).muted ? 'muted' : ''}`}
-            style={{ left: `${node.x / 10}%`, top: `${node.y / 4}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }}
+            style={{ left: `${node.x / 10}%`, top: `${node.y / 4.5}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }}
           >
             <span className="gallery-live-node-badge">{node.badge}</span>
             <div className="gallery-live-node-icon">
-               {node.id === 'user' ? '◉' : node.id === 'istio' ? '↹' : node.id === 'flagger' ? 'ƒ' : '□'}
+               {node.id === 'user' ? '◉' : node.id === 'istio' ? '↹' : node.id === 'prom' ? '◴' : node.id === 'flagger' ? 'ƒ' : '□'}
             </div>
             <strong>{node.title}</strong>
             <small>{node.subtitle}</small>
