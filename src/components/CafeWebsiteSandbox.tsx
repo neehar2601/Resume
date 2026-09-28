@@ -459,13 +459,25 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
       <div className="cafe-flow current-arch-flow">
         <CafeNode title="Users" subtitle="internet traffic" icon="U" active />
         <CafeArrow />
-        {hasAlb ? <>
-          <CafeNode title="ALB" subtitle="public subnets" icon="LB" active />
-          <CafeArrow />
-        </> : null}
-        <CafeNode title={`EC2 Web × ${instanceCount}`} subtitle={hasAlb ? 'private app subnets' : 'early app host'} icon="EC2" active />
-        <CafeArrow />
-        {hasRds && <CafeNode title="RDS" subtitle="private subnet" icon="DB" active />}
+        {level === 1 ? (
+          <CafeNode title="S3 Bucket" subtitle="static website hosting" icon="S3" active />
+        ) : (
+          <>
+            {hasAlb && (
+              <>
+                <CafeNode title="ALB" subtitle="public subnets" icon="LB" active />
+                <CafeArrow />
+              </>
+            )}
+            <CafeNode title={`EC2 Web × ${instanceCount}`} subtitle={hasAlb ? 'private app subnets' : 'early app host'} icon="EC2" active />
+            {hasRds && (
+              <>
+                <CafeArrow />
+                <CafeNode title="RDS" subtitle="private subnet" icon="DB" active />
+              </>
+            )}
+          </>
+        )}
       </div>
       {hasReporting && (
         <>
@@ -473,7 +485,11 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
           <div className="reporting-mini-flow">
             <CafeNode title="EventBridge" subtitle="daily trigger" icon="EV" active />
             <CafeArrow />
-            <CafeNode title="Lambda 1" subtitle="DB read + process" icon="L1" active />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(79, 209, 197, 0.05)', padding: '6px', borderRadius: '8px', border: '1px dashed rgba(79, 209, 197, 0.2)' }}>
+              <CafeNode title="RDS" subtitle="secure read" icon="DB" active />
+              <div style={{ color: 'var(--amber)', fontSize: '14px', fontWeight: 'bold' }}>↔</div>
+              <CafeNode title="Lambda 1" subtitle="DB read + process" icon="L1" active />
+            </div>
             <CafeArrow />
             <CafeNode title="Lambda 2" subtitle="email only" icon="L2" active />
             <CafeArrow />
