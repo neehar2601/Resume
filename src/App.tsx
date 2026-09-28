@@ -43,7 +43,7 @@ export default function App() {
     <div className="app-shell">
       <nav className="nav">
         <div className="container nav-inner">
-          <a className="brand" href="#top">Neehara Nellikalaya</a>
+          <a className="brand" href="#top">neehara<span className="brand-dot">.</span>nellikalaya</a>
           <div className="nav-links">
             <a href="#projects">Projects</a>
             <a href="#experience">Experience</a>
@@ -174,7 +174,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="container footer-inner">
-          <div className="footer-copy">NEEHARA.DEV / CLOUD / DEVOPS / SANDBOX v0.5.7</div>
+          <div className="footer-copy">NEEHARA.NELLIKALAYA / CLOUD / DEVOPS / SANDBOX v0.5.7</div>
           <div className="footer-links">
             <a href={links.github} target="_blank" rel="noreferrer">GitHub</a>
             <a href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>

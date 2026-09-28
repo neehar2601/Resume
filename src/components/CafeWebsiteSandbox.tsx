@@ -156,7 +156,7 @@ export function CafeWebsiteSandbox() {
     <div className="cafe-shell">
       <header className="sandbox-topbar">
         <div className="container sandbox-topbar-inner">
-          <a className="brand" href="/">Neehara Nellikalaya</a>
+          <a className="brand" href="/">neehara<span className="brand-dot">.</span>nellikalaya</a>
           <div className="sandbox-breadcrumb">LAB / AWS ARCHITECTURE / CAFE WEBSITE / v2.9</div>
           <a className="sandbox-back" href="/">← portfolio</a>
         </div>
