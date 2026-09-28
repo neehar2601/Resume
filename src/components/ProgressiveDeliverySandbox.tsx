@@ -345,9 +345,10 @@ export function ProgressiveDeliverySandbox() {
 
         <section className="section sandbox-section">
           <div className="container">
+            <TrafficMap traffic={traffic} />
+            <div style={{ height: '4rem' }} />
             <div className="sandbox-section-heading"><span>01 / architecture</span><h2>The release decision loop</h2></div>
             <ArchitectureDiagram activeNode={selectedNode} onSelect={setSelectedNode} />
-            <TrafficMap traffic={traffic} />
           </div>
         </section>
 
