@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { ProgressiveDeliverySandbox } from './components/ProgressiveDeliverySandbox'
 import { ProjectCard } from './components/ProjectCard'
 import { SystemMap } from './components/SystemMap'
 import { projects } from './data/projects'
@@ -10,6 +12,18 @@ const links = {
 }
 
 export default function App() {
+  const [path, setPath] = useState(window.location.pathname)
+
+  useEffect(() => {
+    const onPopState = () => setPath(window.location.pathname)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  if (path === '/sandbox/progressive-delivery') {
+    return <ProgressiveDeliverySandbox />
+  }
+
   return (
     <div className="app-shell">
       <nav className="nav">
@@ -34,7 +48,7 @@ export default function App() {
                 Cloud / DevOps engineer building with <strong>AWS</strong>, <strong>Kubernetes</strong>, <strong>CI/CD automation</strong> and validation tooling — with hands-on work at <strong>TCS</strong> and <strong>Intel</strong>.
               </p>
               <div className="cta-row">
-                <a className="button primary" href="#projects">Enter the sandbox →</a>
+                <a className="button primary" href="/sandbox/progressive-delivery">Enter the sandbox →</a>
                 <a className="button" href={links.github} target="_blank" rel="noreferrer">GitHub ↗</a>
                 <a className="button" href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>
               </div>
@@ -133,7 +147,7 @@ export default function App() {
             <div className="cta-panel">
               <div className="kicker"><span className="kicker-dot" /> next system to build</div>
               <h2>Make the portfolio itself a DevOps project.</h2>
-              <p>Next, we connect the sandbox to a reusable simulation engine, then deploy this portfolio through its own CI/CD pipeline so the site demonstrates the same engineering loop it talks about.</p>
+              <p>The portfolio now has a dedicated Progressive Delivery lab. Next we can apply the same reusable simulation engine to the AWS architecture and CollegeFest deployment flows.</p>
               <div className="cta-row">
                 <a className="button primary" href={links.github} target="_blank" rel="noreferrer">View source on GitHub ↗</a>
                 <a className="button" href={links.medium} target="_blank" rel="noreferrer">Read the write-ups ↗</a>
@@ -145,7 +159,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="container footer-inner">
-          <div className="footer-copy">NEEHARA.DEV / CLOUD / DEVOPS / SANDBOX v0.1</div>
+          <div className="footer-copy">NEEHARA.DEV / CLOUD / DEVOPS / SANDBOX v0.2</div>
           <div className="footer-links">
             <a href={links.github} target="_blank" rel="noreferrer">GitHub</a>
             <a href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>

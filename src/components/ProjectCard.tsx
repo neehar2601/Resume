@@ -19,6 +19,11 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="project-content">
             <p className="project-description">{project.description}</p>
             <div className="tags">{project.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+            {project.id === 'progressive' && (
+              <div className="cta-row project-sandbox-link">
+                <a className="button primary" href="/sandbox/progressive-delivery">Open full sandbox →</a>
+              </div>
+            )}
             <Pipeline project={project} />
           </div>
         </div>
