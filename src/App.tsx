@@ -162,12 +162,12 @@ export default function App() {
         <section className="section" id="contact">
           <div className="container">
             <div className="cta-panel">
-              <div className="kicker"><span className="kicker-dot" /> next system to build</div>
-              <h2>Make the portfolio itself a DevOps project.</h2>
-              <p>The portfolio now has a dedicated Progressive Delivery lab. The sandbox now covers progressive delivery, AWS architecture, the Image Gallery evolution and the CollegeFest container deployment workflow.</p>
+              <div className="kicker"><span className="kicker-dot" /> get in touch</div>
+              <h2>Let's build something scalable.</h2>
+              <p>I'm currently looking for new opportunities in Cloud and DevOps engineering. My inbox is always open whether you have a question or just want to connect.</p>
               <div className="cta-row">
-                <a className="button primary" href={links.github} target="_blank" rel="noreferrer">View source on GitHub ↗</a>
-                <a className="button" href={links.medium} target="_blank" rel="noreferrer">Read the write-ups ↗</a>
+                <a className="button primary" href={links.linkedin} target="_blank" rel="noreferrer">Message on LinkedIn ↗</a>
+                <a className="button" href="mailto:neeharagovindan@gmail.com">Send an Email ✉</a>
               </div>
             </div>
           </div>
