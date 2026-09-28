@@ -455,8 +455,8 @@ export function CafeWebsiteSandbox() {
 
 function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReporting }: { level: ArchitectureLevel; instanceCount: number; hasAlb: boolean; hasRds: boolean; hasReporting: boolean }) {
   return (
-    <>
-      <div className="cafe-flow current-arch-flow">
+    <div style={{ overflowX: 'auto', paddingBottom: '12px' }}>
+      <div className="cafe-flow current-arch-flow" style={{ width: 'max-content' }}>
         <CafeNode title="Users" subtitle="internet traffic" icon="U" active />
         <CafeArrow />
         {level === 1 ? (
@@ -489,15 +489,24 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
       </div>
       {hasReporting && (
         <>
-          <div className="flow-branch-label">scheduled reporting branch</div>
-          <div className="reporting-mini-flow">
+          <div className="flow-branch-label" style={{ marginTop: '24px' }}>scheduled reporting branch</div>
+          <div className="reporting-mini-flow" style={{ overflow: 'visible', width: 'max-content', paddingTop: '16px' }}>
+            <div style={{ visibility: 'hidden', display: 'flex', alignItems: 'center' }}>
+               <CafeNode title="Users" subtitle="internet traffic" icon="U" />
+               <CafeArrow />
+               <CafeNode title="ALB" subtitle="public subnets" icon="LB" />
+               <CafeArrow />
+            </div>
+            
             <CafeNode title="EventBridge" subtitle="daily trigger" icon="EV" active />
             <CafeArrow />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '-24px', height: '24px', borderLeft: '1px dashed var(--amber)', zIndex: -1 }}></div>
-              <div style={{ position: 'absolute', top: '-38px', color: 'var(--amber)', fontSize: '9px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>↑ connects to RDS</div>
+            
+            <div style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '-60px', left: '50%', height: '60px', borderLeft: '2px dashed var(--amber)', zIndex: 0 }}></div>
+              <div style={{ position: 'absolute', top: '-42px', left: '16px', color: 'var(--amber)', fontSize: '9px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'var(--panel)' }}>↑ Queries DB</div>
               <CafeNode title="Lambda 1" subtitle="DB read + process" icon="L1" active />
             </div>
+            
             <CafeArrow />
             <CafeNode title="Lambda 2" subtitle="email only" icon="L2" active />
             <CafeArrow />
