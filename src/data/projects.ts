@@ -86,4 +86,21 @@ export const projects: Project[] = [
       { id: 'private-s3', name: 'Private S3', detail: 'OAC protected', short: 'OAC' },
     ],
   },
+  {
+    id: 'cicd-pipeline',
+    index: '05',
+    title: 'Automated CI/CD with E2E Gating',
+    subtitle: 'Deployment pipeline from GitHub Actions to S3 with Playwright end-to-end tests gating the production release.',
+    description:
+      'Explore the CI/CD pipeline used for the DevOps Learner Corner website. This simulates pushing to a test environment, executing automated Playwright E2E tests, and only promoting to the CloudFront production environment if all tests pass.',
+    tags: ['GitHub Actions', 'Playwright', 'S3', 'CloudFront', 'CI/CD', 'Automated Testing'],
+    stages: [
+      { id: 'github', name: 'GitHub', detail: 'commit', short: 'GH' },
+      { id: 'test', name: 'S3 (Test)', detail: 'sync test', short: 'S3-T' },
+      { id: 'e2e', name: 'Playwright', detail: 'E2E tests', short: 'E2E' },
+      { id: 'prod', name: 'S3 (Prod)', detail: 'sync prod', short: 'S3-P' },
+      { id: 'cf', name: 'CloudFront', detail: 'invalidate', short: 'CF' },
+    ],
+  },
 ]
+
