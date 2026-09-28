@@ -6,7 +6,7 @@ export type SandboxPhase =
   | 'promoting'
   | 'failed'
   | 'rollback'
-  | 'success'
+  | 'success' | 'rolledBack'
 
 export type SandboxNode = {
   id: string

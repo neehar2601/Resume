@@ -1,0 +1,13 @@
+version: '3'
+services:
+  flask_app:
+    image: neehar/felicity:<BUILD_NUMBER>
+    ports:
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt/live/msisfelicity.in:/etc/letsencrypt/live/msisfelicity.in:ro
+      - /etc/letsencrypt/archive/msisfelicity.in:/etc/letsencrypt/archive/msisfelicity.in:ro
+      - /etc/letsencrypt/keys:/etc/letsencrypt/keys:ro
+    environment:
+      - FLASK_RUN_CERT=/etc/letsencrypt/live/msisfelicity.in/fullchain.pem
+      - FLASK_RUN_KEY=/etc/letsencrypt/live/msisfelicity.in/privkey.pem

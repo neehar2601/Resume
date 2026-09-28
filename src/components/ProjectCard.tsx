@@ -24,6 +24,22 @@ export function ProjectCard({ project }: { project: Project }) {
                 <a className="button primary" href="/sandbox/progressive-delivery">Open full sandbox →</a>
               </div>
             )}
+            {project.id === 'cafe' && (
+              <div className="cta-row project-sandbox-link">
+                <a className="button primary" href="/sandbox/cafe-aws">Open AWS infrastructure lab →</a>
+              </div>
+            )}
+            {project.id === 'image-gallery' && (
+              <div className="cta-row project-sandbox-link">
+                <a className="button primary" href="/sandbox/image-gallery">Explore image gallery evolution →</a>
+                <a className="button" href="https://dj209obmn76yt.cloudfront.net/" target="_blank" rel="noreferrer">Open live gallery ↗</a>
+              </div>
+            )}
+            {project.id === 'collegefest' && (
+              <div className="cta-row project-sandbox-link">
+                <a className="button primary" href="/sandbox/collegefest">Open deployment sandbox →</a>
+              </div>
+            )}
             <Pipeline project={project} />
           </div>
         </div>

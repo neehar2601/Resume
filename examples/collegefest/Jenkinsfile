@@ -1,0 +1,53 @@
+pipeline {
+  agent any
+
+  environment {
+    IMAGE = 'neehar/felicity'
+    IMAGE_TAG = "${BUILD_NUMBER}"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        // Private repository access is configured in Jenkins credentials/SCM.
+        checkout scm
+      }
+    }
+
+    stage('Build Image') {
+      steps {
+        sh 'docker build -t $IMAGE:$IMAGE_TAG .'
+      }
+    }
+
+    stage('Push to Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub',
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
+          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+          sh 'docker push $IMAGE:$IMAGE_TAG'
+        }
+      }
+    }
+
+    stage('Update Compose on EC2') {
+      steps {
+        // Example only: replace host/key details with Jenkins-managed credentials.
+        sshagent(credentials: ['collegefest-ec2-ssh']) {
+          sh '''ssh -o StrictHostKeyChecking=no ubuntu@EC2_HOST \\
+            "sed -i 's|image: neehar/felicity:.*|image: neehar/felicity:${IMAGE_TAG}|' /opt/collegefest/docker-compose.yml && \\
+             cd /opt/collegefest && docker compose pull && docker compose up -d"'''
+        }
+      }
+    }
+
+    stage('Verify HTTPS') {
+      steps {
+        sh 'curl -Ik https://msisfelicity.in'
+      }
+    }
+  }
+}

@@ -57,13 +57,13 @@ export function Terminal({ phase, traffic, version }: { phase: string; traffic: 
         ? [
             'Name:      cafe-web',
             'Sync:      Synced',
-            `Health:    ${phase === 'failed' ? 'Degraded' : 'Healthy'}`,
+            `Health:    ${phase === 'failed' ? 'Degraded' : phase === 'rolledBack' ? 'Healthy / Stable v1' : 'Healthy'}`,
             `Revision:  release/${version}`,
           ]
       : normalized === 'flagger status'
         ? [
             'workload:  cafe-web',
-            `phase:     ${phase === 'failed' ? 'Failed' : phase === 'success' ? 'Promoted' : 'Progressing'}`,
+            `phase:     ${phase === 'failed' ? 'Failed' : phase === 'success' ? 'Promoted' : phase === 'rolledBack' ? 'RolledBack' : 'Progressing'}`,
             `weight:    ${traffic}%`,
             `checks:    ${phase === 'failed' ? 'FAIL' : '3/3'}`,
             `analysis:  ${phase === 'failed' ? 'threshold exceeded' : 'healthy'}`,

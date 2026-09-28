@@ -6,7 +6,8 @@ import type { MetricPoint, SandboxPhase } from '../types/sandbox'
 
 const version = 'v2.4.0'
 const stages = ['GitHub', 'Jenkins', 'Docker', 'Helm', 'Argo CD', 'Kubernetes', 'Istio', 'Prometheus', 'Flagger']
-const trafficSteps = [10, 25, 50, 100]
+const trafficSteps = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
 const techDetails = [
   ['github', 'GitHub', 'Source control', 'A commit is the trigger for the delivery chain.'],
   ['jenkins', 'Jenkins', 'Continuous integration', 'Builds, tests and produces the application artifact in the modeled flow.'],
@@ -27,6 +28,12 @@ const baseLatencySeries: MetricPoint[] = [
   { label: 't0', value: 124 }, { label: 't1', value: 132 }, { label: 't2', value: 138 }, { label: 't3', value: 133 },
 ]
 
+const metricForTraffic = (nextTraffic: number) => ({
+  error: nextTraffic === 100 ? .2 : Math.max(.2, .7 - nextTraffic * .004),
+  latency: Math.round(138 - nextTraffic * .12),
+  requests: Math.round(58 + nextTraffic * .48),
+})
+
 export function ProgressiveDeliverySandbox() {
   const [phase, setPhase] = useState<SandboxPhase>('idle')
   const [activeStage, setActiveStage] = useState(-1)
@@ -34,7 +41,8 @@ export function ProgressiveDeliverySandbox() {
   const [errorRate, setErrorRate] = useState(.2)
   const [latency, setLatency] = useState(124)
   const [requests, setRequests] = useState(18)
-  const [failureMode, setFailureMode] = useState(false)
+  const [preArmFailure, setPreArmFailure] = useState(false)
+  const [rollbackFrom, setRollbackFrom] = useState(0)
   const [selectedNode, setSelectedNode] = useState<string | null>('github')
   const [errorSeries, setErrorSeries] = useState<MetricPoint[]>(baseErrorSeries)
   const [latencySeries, setLatencySeries] = useState<MetricPoint[]>(baseLatencySeries)
@@ -45,94 +53,142 @@ export function ProgressiveDeliverySandbox() {
       case 'sync': return 'GITOPS / SYNC'
       case 'canary': return `CANARY / ${traffic}%`
       case 'promoting': return 'PROMOTION'
-      case 'failed': return 'DEGRADED'
-      case 'rollback': return 'ROLLBACK'
+      case 'failed': return 'THRESHOLD BREACHED'
+      case 'rollback': return 'AUTOMATIC ROLLBACK'
       case 'success': return 'PROMOTED'
+      case 'rolledBack': return 'ROLLED BACK'
       default: return 'READY'
     }
   }, [phase, traffic])
 
+  // Delivery chain: GitHub → Jenkins → Docker → Helm → Argo CD → Kubernetes.
   useEffect(() => {
-    if (phase === 'idle' || phase === 'success' || phase === 'failed') return
+    if (phase !== 'build') return
 
-    let cancelled = false
-    const timers: number[] = []
-    const schedule = (ms: number, callback: () => void) => {
-      const id = window.setTimeout(() => {
-        if (!cancelled) callback()
-      }, ms)
-      timers.push(id)
-    }
-
-    if (phase === 'build') {
+    const timer = window.setTimeout(() => {
       if (activeStage < 4) {
-        schedule(420, () => setActiveStage((current) => current + 1))
+        setActiveStage((current) => current + 1)
       } else {
-        schedule(420, () => setPhase('sync'))
+        setPhase('sync')
       }
-    } else if (phase === 'sync') {
-      setActiveStage(4)
-      schedule(650, () => {
-        setActiveStage(5)
-        setPhase('canary')
-        setTraffic(10)
-        setErrorRate(.3)
-        setLatency(138)
-        setRequests(62)
-        setErrorSeries((points) => [...points, { label: '10', value: .3 }])
-        setLatencySeries((points) => [...points, { label: '10', value: 138 }])
-      })
-    } else if (phase === 'canary') {
-      const nextTraffic = traffic === 10 ? 25 : traffic === 25 ? 50 : 100
-      schedule(500, () => setActiveStage(6))
-      schedule(860, () => setActiveStage(7))
-      schedule(1220, () => {
-        if (failureMode && nextTraffic === 50) {
-          setTraffic(25)
-          setActiveStage(8)
-          setErrorRate(8.2)
-          setLatency(298)
-          setRequests(96)
-          setErrorSeries((points) => [...points, { label: 'fail', value: 8.2 }])
-          setLatencySeries((points) => [...points, { label: 'fail', value: 298 }])
-          setPhase('failed')
-          return
-        }
+    }, 420)
 
-        const nextError = nextTraffic === 100 ? .2 : nextTraffic === 50 ? .5 : .7
-        const nextLatency = nextTraffic === 100 ? 127 : nextTraffic === 50 ? 133 : 142
-        const nextRequests = nextTraffic === 100 ? 104 : nextTraffic === 50 ? 92 : 75
+    return () => window.clearTimeout(timer)
+  }, [phase, activeStage])
 
-        setTraffic(nextTraffic)
-        setErrorRate(nextError)
-        setLatency(nextLatency)
-        setRequests(nextRequests)
+  // GitOps sync hands traffic control to Istio, Prometheus and Flagger.
+  useEffect(() => {
+    if (phase !== 'sync') return
+
+    const timer = window.setTimeout(() => {
+      const first = metricForTraffic(10)
+      setActiveStage(8)
+      setTraffic(10)
+      setErrorRate(first.error)
+      setLatency(first.latency)
+      setRequests(first.requests)
+      setErrorSeries((points) => [...points, { label: '10', value: first.error }])
+      setLatencySeries((points) => [...points, { label: '10', value: first.latency }])
+      setPhase('canary')
+    }, 650)
+
+    return () => window.clearTimeout(timer)
+  }, [phase])
+
+  // The normal rollout continuously evaluates and increases canary traffic in 10% steps.
+  useEffect(() => {
+    if (phase !== 'canary') return
+    if (traffic >= 100) {
+      setPhase('promoting')
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const nextTraffic = Math.min(traffic + 10, 100)
+
+      if (preArmFailure && nextTraffic === 50) {
+        setTraffic(50)
         setActiveStage(8)
-        setErrorSeries((points) => [...points, { label: `${nextTraffic}`, value: nextError }])
-        setLatencySeries((points) => [...points, { label: `${nextTraffic}`, value: nextLatency }])
-        if (nextTraffic === 100) setPhase('promoting')
-      })
-    } else if (phase === 'promoting') {
-      schedule(650, () => setPhase('success'))
-    } else if (phase === 'rollback') {
-      schedule(850, () => {
-        setTraffic(0)
-        setErrorRate(.4)
-        setLatency(126)
-        setRequests(100)
-        setErrorSeries((points) => [...points, { label: 'restore', value: .4 }])
-        setLatencySeries((points) => [...points, { label: 'restore', value: 126 }])
-        setActiveStage(0)
-        setPhase('success')
-      })
-    }
+        setErrorRate(8.2)
+        setLatency(298)
+        setRequests(96)
+        setErrorSeries((points) => [...points, { label: '50!', value: 8.2 }])
+        setLatencySeries((points) => [...points, { label: '50!', value: 298 }])
+            setRollbackFrom(50)
+        setPhase('failed')
+        return
+      }
 
-    return () => {
-      cancelled = true
-      timers.forEach(window.clearTimeout)
-    }
-  }, [phase, activeStage, traffic, failureMode])
+      const next = metricForTraffic(nextTraffic)
+      setTraffic(nextTraffic)
+      setActiveStage(8)
+      setErrorRate(next.error)
+      setLatency(next.latency)
+      setRequests(next.requests)
+      setErrorSeries((points) => [...points, { label: `${nextTraffic}`, value: next.error }])
+      setLatencySeries((points) => [...points, { label: `${nextTraffic}`, value: next.latency }])
 
+      if (nextTraffic === 100) {
+        setPhase('promoting')
+      }
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [phase, traffic, preArmFailure])
+
+  // Keep the telemetry alive between traffic decisions so the sandbox feels like a running system.
+  useEffect(() => {
+    if (phase !== 'canary') return
+
+    const timer = window.setInterval(() => {
+      const jitter = (Math.random() - .5) * .12
+      const nextError = Math.max(.1, errorRate + jitter)
+      const nextLatency = Math.max(108, Math.round(latency + (Math.random() - .5) * 8))
+      const nextRequests = Math.max(40, Math.round(requests + (Math.random() - .5) * 10))
+      setErrorRate(nextError)
+      setLatency(nextLatency)
+      setRequests(nextRequests)
+      setErrorSeries((points) => [...points.slice(-11), { label: `${traffic}%`, value: Number(nextError.toFixed(2)) }])
+      setLatencySeries((points) => [...points.slice(-11), { label: `${traffic}%`, value: nextLatency }])
+    }, 500)
+
+    return () => window.clearInterval(timer)
+  }, [phase, traffic, errorRate, latency, requests])
+
+  // Failure is intentionally followed by an automatic, direct return to stable 100%.
+  useEffect(() => {
+    if (phase !== 'failed') return
+
+    const timer = window.setTimeout(() => {
+      setTraffic(0)
+      setErrorRate(.3)
+      setLatency(126)
+      setRequests(104)
+      setErrorSeries((points) => [...points, { label: '0 / stable', value: .3 }])
+      setLatencySeries((points) => [...points, { label: '0 / stable', value: 126 }])
+      setActiveStage(8)
+      setPhase('rollback')
+    }, 850)
+
+    return () => window.clearTimeout(timer)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'rollback') return
+
+    const timer = window.setTimeout(() => {
+      setPhase('rolledBack')
+    }, 1100)
+
+    return () => window.clearTimeout(timer)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'promoting') return
+
+    const timer = window.setTimeout(() => setPhase('success'), 900)
+    return () => window.clearTimeout(timer)
+  }, [phase])
 
   const deploy = () => {
     setPhase('build')
@@ -141,6 +197,7 @@ export function ProgressiveDeliverySandbox() {
     setErrorRate(.2)
     setLatency(124)
     setRequests(18)
+    setRollbackFrom(0)
     setErrorSeries(baseErrorSeries)
     setLatencySeries(baseLatencySeries)
   }
@@ -152,28 +209,35 @@ export function ProgressiveDeliverySandbox() {
     setErrorRate(.2)
     setLatency(124)
     setRequests(18)
+    setRollbackFrom(0)
     setErrorSeries(baseErrorSeries)
     setLatencySeries(baseLatencySeries)
-    setFailureMode(false)
+    setPreArmFailure(false)
   }
 
   const injectFailure = () => {
     if (phase !== 'canary' || traffic < 10) return
-    setFailureMode(true)
-    setTraffic(25)
+
+    setRollbackFrom(traffic)
     setActiveStage(8)
     setErrorRate(8.2)
     setLatency(298)
     setRequests(96)
-    setErrorSeries((points) => [...points, { label: 'inject', value: 8.2 }])
-    setLatencySeries((points) => [...points, { label: 'inject', value: 298 }])
+    setErrorSeries((points) => [...points, { label: `${traffic}!`, value: 8.2 }])
+    setLatencySeries((points) => [...points, { label: `${traffic}!`, value: 298 }])
     setPhase('failed')
   }
 
-  const recover = () => {
-    setPhase('rollback')
-    setActiveStage(8)
-  }
+  const decision = useMemo(() => {
+    if (phase === 'failed') return { label: 'THRESHOLD BREACHED', detail: 'Flagger blocks promotion and starts automatic rollback.', tone: 'danger' }
+    if (phase === 'rollback') return { label: 'ROLLING BACK → STABLE', detail: `Canary ${rollbackFrom}% → 0%. Stable returns to 100%.`, tone: 'warn' }
+    if (phase === 'success') return { label: 'PROMOTED', detail: 'v2.4.0 is now the stable serving revision.', tone: 'healthy' }
+    if (phase === 'rolledBack') return { label: 'ROLLED BACK', detail: `Canary ${rollbackFrom}% was removed. Stable v1 is serving 100% of traffic.`, tone: 'warn' }
+    if (phase === 'promoting') return { label: 'PROMOTE', detail: '100% traffic reached with healthy signals.', tone: 'healthy' }
+    if (phase === 'canary') return { label: 'HEALTHY / INCREASE', detail: traffic < 100 ? `Signals healthy. Move canary toward ${traffic + 10}%.` : 'Final promotion check.', tone: 'healthy' }
+    if (phase === 'build' || phase === 'sync') return { label: 'WAITING FOR CANARY', detail: 'Delivery is preparing the serving path.', tone: 'neutral' }
+    return { label: 'READY', detail: 'Deploy v2.4.0 to start the control loop.', tone: 'neutral' }
+  }, [phase, rollbackFrom, traffic])
 
   return (
     <div className="sandbox-shell">
@@ -192,7 +256,7 @@ export function ProgressiveDeliverySandbox() {
               <div>
                 <div className="kicker"><span className="kicker-dot" /> interactive deployment lab</div>
                 <h1>Progressive Delivery Sandbox</h1>
-                <p>Operate a frontend simulation of a Kubernetes canary release. Trigger a deployment, watch traffic move, read the metrics, inject degradation, and observe the recovery path.</p>
+                <p>Operate a frontend simulation of a Kubernetes canary release. Deploy it, watch traffic continuously move, read the signals, inject degradation, and observe an automatic rollback without another click.</p>
               </div>
               <div className={`sandbox-status ${phase}`}><span /> {statusLabel}</div>
             </div>
@@ -203,13 +267,55 @@ export function ProgressiveDeliverySandbox() {
                 <strong>{version}</strong>
                 <small>stable v1 → canary v2</small>
               </div>
-              <button className="button primary sandbox-action" type="button" onClick={deploy} disabled={phase !== 'idle' && phase !== 'success'}>▶ deploy {version}</button>
+              <button className="button primary sandbox-action" type="button" onClick={deploy} disabled={!['idle', 'success', 'rolledBack'].includes(phase)}>▶ deploy {version}</button>
               <button className="button sandbox-action" type="button" onClick={injectFailure} disabled={phase !== 'canary'}>⚠ inject degradation</button>
-              <button className="button sandbox-action" type="button" onClick={phase === 'failed' ? recover : reset}>{phase === 'failed' ? '↻ rollback' : 'reset'}</button>
+              <button className="button sandbox-action" type="button" onClick={reset}>reset</button>
               <label className="failure-toggle">
-                <input type="checkbox" checked={failureMode} onChange={(event) => setFailureMode(event.target.checked)} disabled={phase !== 'idle' && phase !== 'success'} />
+                <input type="checkbox" checked={preArmFailure} onChange={(event) => setPreArmFailure(event.target.checked)} disabled={!['idle', 'success', 'rolledBack'].includes(phase)} />
                 <span /> pre-arm failure at 50%
               </label>
+            </div>
+
+            <div className="control-loop-panel">
+              <div className="control-loop-head">
+                <div>
+                  <span className="control-label">progressive delivery control loop</span>
+                  <strong>Signals before decisions</strong>
+                </div>
+                <span className="control-loop-live"><i /> LIVE SIMULATION</span>
+              </div>
+
+              <div className="canary-progress-block">
+                <div className="control-loop-labels">
+                  <span>stable {100 - traffic}%</span>
+                  <b>canary {traffic}%</b>
+                </div>
+                <div className="canary-bar"><span style={{ width: `${traffic}%` }} /></div>
+                <div className="canary-ticks">
+                  {trafficSteps.map((step) => <span className={traffic >= step ? 'reached' : ''} key={step}>{step}%</span>)}
+                </div>
+              </div>
+
+              <div className="signal-decision-grid">
+                <div className="signals-card">
+                  <div className="loop-card-heading"><span>signals</span><b>Prometheus</b></div>
+                  <div className="loop-metrics">
+                    <div><small>error rate</small><strong className={errorRate > 1 ? 'metric-bad' : 'metric-good'}>{errorRate.toFixed(1)}%</strong></div>
+                    <div><small>p95 latency</small><strong className={latency > 220 ? 'metric-bad' : 'metric-good'}>{latency}ms</strong></div>
+                    <div><small>requests</small><strong>{requests}</strong></div>
+                  </div>
+                  <div className={`signal-state ${errorRate > 1 || latency > 220 ? 'bad' : 'good'}`}>
+                    {errorRate > 1 || latency > 220 ? '▲ threshold exceeded' : '● metrics healthy'}
+                  </div>
+                </div>
+
+                <div className={`decision-card ${decision.tone}`}>
+                  <div className="loop-card-heading"><span>decision</span><b>Flagger</b></div>
+                  <strong>{decision.label}</strong>
+                  <p>{decision.detail}</p>
+                  <div className="decision-arrow">{decision.tone === 'danger' ? '↘' : decision.tone === 'warn' ? '↩' : '→'}</div>
+                </div>
+              </div>
             </div>
 
             <div className="pipeline-track">
@@ -226,10 +332,10 @@ export function ProgressiveDeliverySandbox() {
               <div className={`rollback-panel ${phase}`}>
                 <div>
                   <span className="rollback-kicker">automated recovery path</span>
-                  <strong>{phase === 'failed' ? 'FLAGGER STOPPED PROMOTION' : 'RESTORING STABLE REVISION'}</strong>
-                  <p>{phase === 'failed' ? 'Metric threshold breached at 50% canary traffic. Stable remains the recovery target.' : 'Traffic is moving back to stable v1 and the failed candidate is being removed from the serving path.'}</p>
+                  <strong>{phase === 'failed' ? 'FLAGGER ROLLBACK ARMED' : 'FLAGGER ROLLBACK'}</strong>
+                  <p>{phase === 'failed' ? `Metrics breached the configured simulation threshold at ${rollbackFrom}% canary traffic. No human intervention is required.` : `Canary traffic is removed directly: ${rollbackFrom}% → 0%. Stable v1 returns to 100% of serving traffic.`}</p>
                 </div>
-                <div className="rollback-flow"><span>canary v2</span><b>←</b><span>stable v1</span></div>
+                <div className="rollback-flow"><span>canary {rollbackFrom}%</span><b>→ 0%</b><span>stable 100%</span></div>
               </div>
             )}
           </div>
@@ -244,7 +350,7 @@ export function ProgressiveDeliverySandbox() {
 
         <section className="section sandbox-section" id="observability">
           <div className="container">
-            <div className="sandbox-section-heading"><span>02 / observability</span><h2>Signals before decisions</h2></div>
+            <div className="sandbox-section-heading"><span>02 / observability detail</span><h2>Live telemetry under the rollout</h2></div>
             <MetricsPanel traffic={traffic} errorRate={errorRate} latency={latency} requests={requests} errorSeries={errorSeries} latencySeries={latencySeries} />
           </div>
         </section>
@@ -258,10 +364,11 @@ export function ProgressiveDeliverySandbox() {
             <div>
               <div className="sandbox-section-heading"><span>04 / controls</span><h2>What to try</h2></div>
               <div className="experiment-card">
-                <div className="experiment-step"><b>01</b><div><strong>Deploy</strong><p>Start {version} and follow the pipeline until the first canary slice reaches the service mesh.</p></div></div>
-                <div className="experiment-step"><b>02</b><div><strong>Observe</strong><p>Watch error rate, latency, requests and the stable/canary traffic split change together.</p></div></div>
-                <div className="experiment-step"><b>03</b><div><strong>Break it</strong><p>Inject degradation or pre-arm the 50% failure path. Flagger should stop promotion.</p></div></div>
-                <div className="experiment-step"><b>04</b><div><strong>Recover</strong><p>Run rollback and watch traffic return to the stable revision.</p></div></div>
+                <div className="experiment-step"><b>01</b><div><strong>Deploy</strong><p>Start {version}. The delivery chain runs automatically until the canary loop begins.</p></div></div>
+                <div className="experiment-step"><b>02</b><div><strong>Observe</strong><p>Watch traffic move 10% at a time while Prometheus-style signals update continuously.</p></div></div>
+                <div className="experiment-step"><b>03</b><div><strong>Break it</strong><p>Inject degradation now or pre-arm the 50% failure path before deployment.</p></div></div>
+                <div className="experiment-step"><b>04</b><div><strong>Recover</strong><p>Flagger automatically removes the canary from traffic: the rollback is direct, not gradual.</p></div></div>
+                <div className="experiment-step future"><b>05</b><div><strong>Future policy lab</strong><p>Later we can let visitors set thresholds, intervals and step weights, then preview the corresponding Flagger YAML.</p></div></div>
               </div>
             </div>
           </div>

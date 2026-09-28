@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ProgressiveDeliverySandbox } from './components/ProgressiveDeliverySandbox'
+import { CafeWebsiteSandbox } from './components/CafeWebsiteSandbox'
+import { ImageGallerySandbox } from './components/ImageGallerySandbox'
+import { CollegeFestSandbox } from './components/CollegeFestSandbox'
 import { ProjectCard } from './components/ProjectCard'
 import { SystemMap } from './components/SystemMap'
 import { projects } from './data/projects'
@@ -22,6 +25,18 @@ export default function App() {
 
   if (path === '/sandbox/progressive-delivery') {
     return <ProgressiveDeliverySandbox />
+  }
+
+  if (path === '/sandbox/cafe-aws') {
+    return <CafeWebsiteSandbox />
+  }
+
+  if (path === '/sandbox/image-gallery') {
+    return <ImageGallerySandbox />
+  }
+
+  if (path === '/sandbox/collegefest') {
+    return <CollegeFestSandbox />
   }
 
   return (
@@ -81,7 +96,7 @@ export default function App() {
           <div className="container">
             <div className="section-header">
               <h2>Featured systems</h2>
-              <span>03 — operate them, don't just read them</span>
+              <span>04 — operate them, don't just read them</span>
               <div className="section-rule" />
             </div>
             <div className="project-grid">
@@ -147,7 +162,7 @@ export default function App() {
             <div className="cta-panel">
               <div className="kicker"><span className="kicker-dot" /> next system to build</div>
               <h2>Make the portfolio itself a DevOps project.</h2>
-              <p>The portfolio now has a dedicated Progressive Delivery lab. Next we can apply the same reusable simulation engine to the AWS architecture and CollegeFest deployment flows.</p>
+              <p>The portfolio now has a dedicated Progressive Delivery lab. The sandbox now covers progressive delivery, AWS architecture, the Image Gallery evolution and the CollegeFest container deployment workflow.</p>
               <div className="cta-row">
                 <a className="button primary" href={links.github} target="_blank" rel="noreferrer">View source on GitHub ↗</a>
                 <a className="button" href={links.medium} target="_blank" rel="noreferrer">Read the write-ups ↗</a>
@@ -159,7 +174,7 @@ export default function App() {
 
       <footer className="footer">
         <div className="container footer-inner">
-          <div className="footer-copy">NEEHARA.DEV / CLOUD / DEVOPS / SANDBOX v0.2</div>
+          <div className="footer-copy">NEEHARA.DEV / CLOUD / DEVOPS / SANDBOX v0.5.7</div>
           <div className="footer-links">
             <a href={links.github} target="_blank" rel="noreferrer">GitHub</a>
             <a href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
