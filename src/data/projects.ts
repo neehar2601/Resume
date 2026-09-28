@@ -52,23 +52,6 @@ export const projects: Project[] = [
   },
 
   {
-    id: 'image-gallery',
-    index: '04',
-    title: 'Dynamic Image Gallery on AWS',
-    subtitle: 'Architecture evolution from static S3 hosting to generated metadata, serverless discovery and private CloudFront delivery.',
-    description:
-      'Explore the actual evolution of the image gallery: start with static S3 hosting, generate metadata with a script, replace the metadata file with Lambda + API Gateway, then protect the objects behind CloudFront while keeping dynamic listing serverless.',
-    tags: ['S3', 'Lambda', 'API Gateway', 'CloudFront', 'OAC', 'IAM', 'Serverless'],
-    stages: [
-      { id: 's3-static', name: 'S3 Static', detail: 'website', short: 'S3' },
-      { id: 'metadata', name: 'Metadata', detail: 'generated index', short: 'JSON' },
-      { id: 'lambda', name: 'Lambda', detail: 'dynamic listing', short: 'λ' },
-      { id: 'api', name: 'API Gateway', detail: 'HTTPS API', short: 'API' },
-      { id: 'cloudfront', name: 'CloudFront', detail: 'secure delivery', short: 'CF' },
-      { id: 'private-s3', name: 'Private S3', detail: 'OAC protected', short: 'OAC' },
-    ],
-  },
-  {
     id: 'collegefest',
     index: '03',
     title: 'CollegeFest Deployment Flow',
@@ -84,6 +67,23 @@ export const projects: Project[] = [
       { id: 'compose', name: 'Compose', detail: 'deploy', short: 'DC' },
       { id: 'health', name: 'Health check', detail: 'verify', short: 'HC' },
       { id: 'live', name: 'Live', detail: 'serve', short: 'ON' },
+    ],
+  },
+  {
+    id: 'image-gallery',
+    index: '04',
+    title: 'Dynamic Image Gallery on AWS',
+    subtitle: 'Architecture evolution from static S3 hosting to generated metadata, serverless discovery and private CloudFront delivery.',
+    description:
+      'Explore the actual evolution of the image gallery: start with static S3 hosting, generate metadata with a script, replace the metadata file with Lambda + API Gateway, then protect the objects behind CloudFront while keeping dynamic listing serverless.',
+    tags: ['S3', 'Lambda', 'API Gateway', 'CloudFront', 'OAC', 'IAM', 'Serverless'],
+    stages: [
+      { id: 's3-static', name: 'S3 Static', detail: 'website', short: 'S3' },
+      { id: 'metadata', name: 'Metadata', detail: 'generated index', short: 'JSON' },
+      { id: 'lambda', name: 'Lambda', detail: 'dynamic listing', short: 'λ' },
+      { id: 'api', name: 'API Gateway', detail: 'HTTPS API', short: 'API' },
+      { id: 'cloudfront', name: 'CloudFront', detail: 'secure delivery', short: 'CF' },
+      { id: 'private-s3', name: 'Private S3', detail: 'OAC protected', short: 'OAC' },
     ],
   },
 ]

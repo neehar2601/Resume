@@ -131,6 +131,18 @@ export default function App() {
                   <p className="job-desc">Worked across AWS workloads, incident operations and workflow automation; supported EC2, S3, VPC, RDS and service-management processes.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="education">
+          <div className="container">
+            <div className="section-header">
+              <h2>Education</h2>
+              <span>academic background</span>
+              <div className="section-rule" />
+            </div>
+            <div className="experience">
               <div className="job">
                 <div className="job-date">2024 — 2026</div>
                 <div>
@@ -146,7 +158,7 @@ export default function App() {
         <section className="section" id="skills">
           <div className="container">
             <div className="section-header">
-              <h2>Skills as a system</h2>
+              <h2>Skills</h2>
               <span>not just a keyword wall</span>
               <div className="section-rule" />
             </div>
