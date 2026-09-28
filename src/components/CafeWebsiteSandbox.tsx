@@ -455,8 +455,9 @@ export function CafeWebsiteSandbox() {
 
 function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReporting }: { level: ArchitectureLevel; instanceCount: number; hasAlb: boolean; hasRds: boolean; hasReporting: boolean }) {
   return (
-    <div style={{ overflowX: 'auto', paddingBottom: '12px' }}>
-      <div className="cafe-flow current-arch-flow" style={{ width: 'max-content' }}>
+    <>
+      <div style={{ overflowX: 'auto', paddingBottom: '12px' }}>
+        <div className="cafe-flow current-arch-flow" style={{ width: 'max-content' }}>
         <CafeNode title="Users" subtitle="internet traffic" icon="U" active />
         <CafeArrow />
         {level === 1 ? (
@@ -514,6 +515,7 @@ function CurrentArchitecture({ level, instanceCount, hasAlb, hasRds, hasReportin
           </div>
         </>
       )}
+      </div>
       <div className="ops-plane">
         <span>OBSERVE</span><strong>CloudWatch</strong><small>ALB • EC2 • RDS • Lambda</small>
       </div>
