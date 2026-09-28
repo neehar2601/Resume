@@ -1,6 +1,7 @@
 import { NavBrand } from './NavBrand'
 import { useEffect, useMemo, useState } from 'react'
 import { ArchitectureDiagram } from './sandbox/ArchitectureDiagram'
+import { TrafficMap } from './sandbox/TrafficMap'
 import { MetricsPanel } from './sandbox/MetricsPanel'
 import { Terminal } from './sandbox/Terminal'
 import type { MetricPoint, SandboxPhase } from '../types/sandbox'
@@ -346,6 +347,7 @@ export function ProgressiveDeliverySandbox() {
           <div className="container">
             <div className="sandbox-section-heading"><span>01 / architecture</span><h2>The release decision loop</h2></div>
             <ArchitectureDiagram activeNode={selectedNode} onSelect={setSelectedNode} />
+            <TrafficMap traffic={traffic} />
           </div>
         </section>
 
