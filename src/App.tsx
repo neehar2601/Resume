@@ -167,7 +167,7 @@ export default function App() {
               <p>I'm currently looking for new opportunities in Cloud and DevOps engineering. My inbox is always open whether you have a question or just want to connect.</p>
               <div className="cta-row">
                 <a className="button primary" href={links.linkedin} target="_blank" rel="noreferrer">Message on LinkedIn ↗</a>
-                <a className="button" href="mailto:neeharagovindan@gmail.com">Send an Email ✉</a>
+                <a className="button" href="mailto:nellikalayaneehara@gmail.com">Send an Email ✉</a>
               </div>
             </div>
           </div>
