@@ -4,7 +4,6 @@ import { CafeWebsiteSandbox } from './components/CafeWebsiteSandbox'
 import { ImageGallerySandbox } from './components/ImageGallerySandbox'
 import { CollegeFestSandbox } from './components/CollegeFestSandbox'
 import { ProjectCard } from './components/ProjectCard'
-import { SystemMap } from './components/SystemMap'
 import { projects } from './data/projects'
 import './index.css'
 import { NavBrand } from './components/NavBrand'
@@ -65,11 +64,9 @@ export default function App() {
                 Cloud / DevOps engineer building with <strong>AWS</strong>, <strong>Kubernetes</strong>, <strong>CI/CD automation</strong> and validation tooling — with hands-on work at <strong>TCS</strong> and <strong>Intel</strong>.
               </p>
               <div className="cta-row">
-                <a className="button primary" href="/sandbox/progressive-delivery">Enter the sandbox →</a>
                 <a className="button" href={links.github} target="_blank" rel="noreferrer">GitHub ↗</a>
                 <a className="button" href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>
               </div>
-              <SystemMap />
             </div>
 
             <div className="hero-terminal" aria-label="Simulated deployment terminal">
