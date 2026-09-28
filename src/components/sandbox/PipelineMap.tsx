@@ -1,27 +1,31 @@
 import React from 'react'
 
 export function PipelineMap({ activeIndex, deployState }: { activeIndex: number; deployState: string }) {
-  // activeIndex maps to the 7 stages in CicdPipelineSandbox
-  // 0: push, 1: gha, 2: s3-test, 3: e2e, 4: s3-prod, 5: cloudfront, 6: live
-
   const isFailed = deployState === 'failed'
 
   const nodes = [
-    { id: 'github', x: 100, y: 200, title: 'GitHub', subtitle: 'development branch', badge: 'SOURCE', active: activeIndex >= 0 },
-    { id: 'actions', x: 400, y: 200, title: 'Actions Runner', subtitle: 'ubuntu-latest', badge: 'CI', active: activeIndex >= 1, accent: true },
-    { id: 's3test', x: 750, y: 100, title: 'S3 (Test)', subtitle: 'devops-learner', badge: 'STORAGE', active: activeIndex >= 2 },
-    { id: 'e2e', x: 750, y: 200, title: 'Playwright', subtitle: 'E2E suite', badge: 'TEST', active: activeIndex >= 3, failed: isFailed && activeIndex === 3 },
-    { id: 's3prod', x: 750, y: 320, title: 'S3 (Prod)', subtitle: 'devopslearnercorner.org', badge: 'STORAGE', active: activeIndex >= 4 },
-    { id: 'cf', x: 400, y: 320, title: 'CloudFront', subtitle: 'CDN cache', badge: 'DELIVERY', active: activeIndex >= 5 },
+    { id: 'github', x: 150, y: 150, title: 'GitHub', subtitle: 'development branch', badge: 'SOURCE', active: activeIndex >= 0 },
+    { id: 'actions', x: 400, y: 150, title: 'Actions Runner', subtitle: 'ubuntu-latest', badge: 'CI', active: activeIndex >= 1, accent: true },
+    { id: 's3test', x: 650, y: 150, title: 'S3 (Test)', subtitle: 'devops-learner', badge: 'STORAGE', active: activeIndex >= 2 },
+    { id: 'e2e', x: 900, y: 150, title: 'Playwright', subtitle: 'E2E suite', badge: 'TEST', active: activeIndex >= 3, failed: isFailed && activeIndex === 3 },
+    { id: 's3prod', x: 900, y: 350, title: 'S3 (Prod)', subtitle: 'devopslearnercorner.org', badge: 'STORAGE', active: activeIndex >= 4 },
+    { id: 'cf', x: 650, y: 350, title: 'CloudFront', subtitle: 'CDN cache', badge: 'DELIVERY', active: activeIndex >= 5 },
+    { id: 'live', x: 400, y: 350, title: 'Users', subtitle: 'HTTPS traffic', badge: 'TRAFFIC', active: activeIndex >= 6 },
   ]
 
   const paths = [
-    { id: 'push', d: 'M150 200 L350 200', label: 'git push', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 0 },
-    { id: 'deploy-test', d: 'M450 185 C550 185 650 100 700 100', label: 'aws s3 sync', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 2 },
-    { id: 'run-e2e', d: 'M450 200 L700 200', label: 'npx playwright', tone: isFailed ? 'danger' : 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 3 },
-    { id: 'e2e-verify', d: 'M750 180 L750 120', label: 'verify', tone: isFailed ? 'danger' : 'amber', duration: '1.5s', delay: '0.5s', active: activeIndex >= 3 },
-    { id: 'deploy-prod', d: 'M450 215 C550 215 650 320 700 320', label: 'aws s3 sync', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 4 && !isFailed },
-    { id: 'invalidate', d: 'M400 230 L400 300', label: 'invalidate /*', tone: 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 5 && !isFailed },
+    // 0: Push
+    { id: 'push', d: 'M200 150 L350 150', label: 'push', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 0 },
+    // 1: Actions -> S3 Test
+    { id: 'deploy-test', d: 'M450 150 L600 150', label: 'aws s3 sync', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 2 },
+    // 2: S3 Test -> Playwright
+    { id: 'run-e2e', d: 'M700 150 L850 150', label: 'npx playwright test', tone: isFailed ? 'danger' : 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 3 },
+    // 3: Playwright -> S3 Prod (Downwards)
+    { id: 'deploy-prod', d: 'M900 200 L900 300', label: 'aws s3 sync (prod)', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 4 && !isFailed },
+    // 4: S3 Prod -> CloudFront (Leftwards)
+    { id: 'invalidate', d: 'M850 350 L700 350', label: 'invalidate /*', tone: 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 5 && !isFailed },
+    // 5: CloudFront -> Users (Leftwards)
+    { id: 'serve', d: 'M600 350 L450 350', label: 'HTTPS live', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 6 && !isFailed },
   ]
 
   return (
@@ -38,9 +42,9 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         </div>
       </div>
       
-      <div className="gallery-live-map-canvas" style={{ minHeight: '440px' }}>
+      <div className="gallery-live-map-canvas" style={{ minHeight: '480px' }}>
         <div className="gallery-grid-overlay" />
-        <svg className="gallery-flow-svg" viewBox="0 0 1000 450" role="img" aria-label="Pipeline routing map">
+        <svg className="gallery-flow-svg" viewBox="0 0 1000 500" role="img" aria-label="Pipeline routing map">
           <defs>
             <filter id="flow-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -63,14 +67,14 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
                 <animateMotion
                   dur={flow.duration}
                   begin={flow.delay}
-                  repeatCount={isFailed && flow.id === 'e2e-verify' ? '2' : 'indefinite'}
+                  repeatCount={isFailed && flow.id === 'run-e2e' ? '2' : 'indefinite'}
                   path={flow.d}
                 />
               </circle>
             </g>
           ))}
           {paths.filter(p => p.active).map((flow) => (
-             <text key={`label-${flow.id}`} style={{ fill: 'var(--muted)', fontSize: '11px', fontWeight: 600 }}>
+             <text key={`label-${flow.id}`} style={{ fill: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>
                <textPath href={`#path-${flow.id}`} startOffset="50%" textAnchor="middle">
                  {flow.label}
                </textPath>
@@ -81,14 +85,14 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         {nodes.map((node) => (
           <div
             key={node.id}
-            className={`gallery-live-node ${node.accent ? 'accent' : ''} ${!node.active ? 'muted' : ''} ${node.failed ? 'failed-node' : ''}`}
-            style={{ left: `${node.x / 10}%`, top: `${node.y / 4.5}%`, transform: 'translate(-50%, -50%)', position: 'absolute' }}
+            className={`gallery-live-node ${node.accent ? 'accent' : ''} ${!node.active ? 'muted' : ''} ${(node as any).failed ? 'failed-node' : ''}`}
+            style={{ left: `${node.x / 10}%`, top: `${node.y / 5}%`, transform: 'translate(-50%, -50%)', position: 'absolute', zIndex: 10 }}
           >
-            <span className="gallery-live-node-badge" style={node.failed ? { color: '#ff4d4f', borderBottomColor: '#ff4d4f' } : {}}>{node.badge}</span>
-            <div className="gallery-live-node-icon" style={node.failed ? { color: '#ff4d4f' } : {}}>
-               {node.id === 'github' ? '◆' : node.id === 'actions' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : '▱'}
+            <span className="gallery-live-node-badge" style={(node as any).failed ? { color: '#ff4d4f', borderBottomColor: '#ff4d4f' } : {}}>{node.badge}</span>
+            <div className="gallery-live-node-icon" style={(node as any).failed ? { color: '#ff4d4f' } : {}}>
+               {node.id === 'github' ? '◆' : node.id === 'actions' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : node.id === 'live' ? '◉' : '▱'}
             </div>
-            <strong style={node.failed ? { color: '#ff4d4f' } : {}}>{node.title}</strong>
+            <strong style={(node as any).failed ? { color: '#ff4d4f' } : {}}>{node.title}</strong>
             <small>{node.subtitle}</small>
           </div>
         ))}
