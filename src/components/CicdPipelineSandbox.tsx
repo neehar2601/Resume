@@ -16,13 +16,13 @@ const stages: { id: Stage; label: string; short: string }[] = [
 ]
 
 const flowMessages = [
-  'Developer pushes to development branch',
-  'GitHub Actions workflow triggered (deploy-s3.yml)',
-  'aws s3 sync . s3://test-bucket',
-  'npx playwright test against test URL',
-  'aws s3 sync . s3://prod-bucket',
-  'aws cloudfront create-invalidation /*',
-  'Production site devopslearnercorner.org updated',
+  'Developer pushes commit to development branch (git push origin dev)',
+  'GitHub Actions runner initialised: trigger workflow .github/workflows/deploy-s3.yml',
+  'Job [deploy-test]: syncing static build artifacts to S3 test bucket (aws s3 sync . s3://test-bucket)',
+  'Job [e2e-tests]: executing automated Playwright end-to-end regression suite against test URL',
+  'Job [deploy-prod]: tests passed with 100% success — syncing release to production bucket (s3://prod-bucket)',
+  'Job [cdn-cache]: creating CloudFront edge cache invalidation (aws cloudfront create-invalidation /*)',
+  'Production site live! Traffic routed through CloudFront CDN to S3 origin at devopslearnercorner.org',
 ]
 
 const ymlTest = `  deploy:\n    name: Deploy to S3\n    runs-on: ubuntu-latest\n    steps:\n      - run: aws s3 sync . s3://\${{ secrets.AWS_S3_BUCKET }} \\ \n             --delete --exclude \".git/*\"`
@@ -55,7 +55,7 @@ export function CicdPipelineSandbox() {
       } else {
         setActiveIndex(current)
       }
-    }, 1800)
+    }, 3800)
 
     return () => clearInterval(interval)
   }, [deployState, injectFailure])
@@ -130,32 +130,43 @@ export function CicdPipelineSandbox() {
                   <span>github-actions-runner</span>
                   <div className="terminal-controls"><i /><i /><i /></div>
                 </div>
-                <div className="terminal-body" style={{ minHeight: '120px' }}>
-                  {deployState === 'idle' && <span className="terminal-line muted">Waiting for push event on development branch...</span>}
-                  {activeIndex >= 0 && (
-                    <span className="terminal-line ok">
-                      $ {flowMessages[activeIndex]}
+                <div className="terminal-body" style={{ minHeight: '160px', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {deployState === 'idle' && (
+                    <span className="terminal-line muted">
+                      Ready. Click &quot;Push to development branch&quot; to start the CI/CD pipeline simulation.
                     </span>
+                  )}
+                  {activeIndex >= 0 && (
+                    <>
+                      {flowMessages.slice(0, activeIndex + 1).map((msg, idx) => (
+                        <div key={idx} className={`terminal-line ${idx === activeIndex ? 'ok' : 'muted'}`} style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                          <span style={{ color: idx < activeIndex ? 'var(--teal)' : 'var(--amber)', fontWeight: 'bold' }}>
+                            {idx < activeIndex ? '✓' : '➜'}
+                          </span>
+                          <span>$ {msg}</span>
+                        </div>
+                      ))}
+                    </>
                   )}
                   {deployState === 'failed' && activeIndex === 3 && (
-                    <span className="terminal-line error" style={{ marginTop: '0.5rem' }}>
-                      Error: E2E tests failed! 2 tests failed, 10 passed.
+                    <div className="terminal-line error" style={{ marginTop: '0.5rem', padding: '8px 12px', background: 'rgba(255, 77, 79, 0.08)', borderRadius: '6px', borderLeft: '3px solid #ff4d4f' }}>
+                      <strong>✗ Production release gated:</strong> Playwright E2E suite detected regressions (2 failed, 10 passed).
                       <br/>
-                      Pipeline blocked. Production deployment aborted.
-                    </span>
+                      AWS S3 production sync &amp; CloudFront cache invalidation safely aborted.
+                    </div>
                   )}
                   {deployState === 'success' && (
-                    <span className="terminal-line ok" style={{ marginTop: '0.5rem' }}>
-                      Success: Pipeline completed! Production site is live at{' '}
+                    <div className="terminal-line ok" style={{ marginTop: '0.5rem', padding: '8px 12px', background: 'rgba(79, 209, 197, 0.08)', borderRadius: '6px', borderLeft: '3px solid var(--teal)' }}>
+                      <strong>✓ Deployment successful!</strong> Production site is live and serving users at{' '}
                       <a
                         href="https://devopslearnercorner.org/"
                         target="_blank"
                         rel="noreferrer"
-                        style={{ color: '#58a6ff', textDecoration: 'underline' }}
+                        style={{ color: '#58a6ff', textDecoration: 'underline', fontWeight: 600 }}
                       >
                         devopslearnercorner.org ↗
                       </a>
-                    </span>
+                    </div>
                   )}
                 </div>
               </div>

@@ -76,14 +76,18 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
   ]
 
   // Only the currently executing stage has isWorking: true
+  // Explicit upright label coordinates (labelX, labelY) so text is NEVER inverted
   const paths = [
     // Stage 0: Developer pushes to GitHub Actions
     {
       id: 'push',
       d: 'M 140 250 L 220 250',
       label: 'git push',
+      labelX: 180,
+      labelY: 232,
+      labelWidth: 80,
       tone: 'teal',
-      duration: '1.6s',
+      duration: '2.6s',
       isWorking: activeIndex === 0,
     },
     // Stage 2: GitHub Actions pushes data to test S3 bucket
@@ -91,17 +95,23 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
       id: 'deploy-test',
       d: 'M 280 205 Q 280 120 485 120',
       label: 'aws s3 sync (test)',
+      labelX: 375,
+      labelY: 96,
+      labelWidth: 140,
       tone: 'teal',
-      duration: '2.0s',
+      duration: '2.8s',
       isWorking: activeIndex === 2,
     },
     // Stage 3: Playwright runs E2E tests against test S3 bucket
     {
       id: 'run-e2e',
       d: 'M 755 120 L 615 120',
-      label: isFailed ? 'tests failed' : 'playwright test URL',
+      label: isFailed ? 'E2E tests failed ✗' : 'playwright test URL',
+      labelX: 685,
+      labelY: 94,
+      labelWidth: isFailed ? 145 : 150,
       tone: isFailed ? 'danger' : 'amber',
-      duration: '1.5s',
+      duration: '2.4s',
       isWorking: activeIndex === 3,
     },
     // Stage 4: GitHub Actions syncs data to production S3 bucket
@@ -109,8 +119,11 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
       id: 'deploy-prod',
       d: 'M 280 295 Q 280 380 455 380',
       label: 'aws s3 sync (prod)',
+      labelX: 365,
+      labelY: 404,
+      labelWidth: 140,
       tone: 'teal',
-      duration: '2.0s',
+      duration: '2.8s',
       isWorking: activeIndex === 4 && !isFailed,
     },
     // Stage 5: GitHub Actions invalidates CloudFront cache
@@ -118,26 +131,35 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
       id: 'invalidate',
       d: 'M 345 270 Q 520 270 670 340',
       label: 'invalidate cache /*',
+      labelX: 510,
+      labelY: 275,
+      labelWidth: 145,
       tone: 'amber',
-      duration: '2.0s',
+      duration: '2.8s',
       isWorking: activeIndex === 5 && !isFailed,
-    },
-    // Stage 6 / Live: CloudFront fetching / serving origin from S3 Production
-    {
-      id: 'cf-to-prod',
-      d: 'M 665 380 L 585 380',
-      label: 'origin connection',
-      tone: 'teal',
-      duration: '1.8s',
-      isWorking: (activeIndex === 6 || deployState === 'success') && !isFailed,
     },
     // Stage 6 / Live: End Users requesting content from CloudFront
     {
       id: 'serve',
       d: 'M 870 380 L 795 380',
       label: 'HTTPS requests',
+      labelX: 832,
+      labelY: 354,
+      labelWidth: 125,
       tone: 'teal',
-      duration: '1.8s',
+      duration: '2.4s',
+      isWorking: (activeIndex === 6 || deployState === 'success') && !isFailed,
+    },
+    // Stage 6 / Live: CloudFront fetching / serving origin from S3 Production
+    {
+      id: 'cf-to-prod',
+      d: 'M 665 380 L 585 380',
+      label: 'origin connection (S3)',
+      labelX: 625,
+      labelY: 354,
+      labelWidth: 155,
+      tone: 'teal',
+      duration: '2.4s',
       isWorking: (activeIndex === 6 || deployState === 'success') && !isFailed,
     },
   ]
@@ -150,7 +172,7 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         <div>
           <span className="control-label">pipeline architecture map</span>
           <strong>CI/CD Workflow Execution</strong>
-          <p>Moving lines animate only on the currently active stage.</p>
+          <p>Smooth stage progression with dedicated execution paths.</p>
         </div>
         <div className="gallery-flow-legend">
           <span><i className="legend-dot teal" /> active stage packet</span>
@@ -158,12 +180,12 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         </div>
       </div>
 
-      <div className="gallery-live-map-canvas" style={{ minHeight: '500px' }}>
+      <div className="gallery-live-map-canvas" style={{ minHeight: '520px' }}>
         <div className="gallery-grid-overlay" />
         <svg className="gallery-flow-svg" viewBox="0 0 1000 500" role="img" aria-label="Pipeline routing map">
           <defs>
             <filter id="flow-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -182,33 +204,67 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
               d={flow.d}
               stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth="1.5"
-              strokeDasharray="4 4"
+              strokeDasharray="5 5"
               fill="none"
             />
           ))}
 
-          {/* Active moving packets ONLY on working stages */}
+          {/* Active moving packets ONLY on working stages with smooth spline easing */}
           {activePaths.map((flow) => (
             <g key={`active-${flow.id}`}>
-              <path d={flow.d} className={`gallery-path gallery-path-${flow.tone}`} fill="none" />
+              {/* Illuminated path line */}
+              <path d={flow.d} className={`gallery-path gallery-path-${flow.tone}`} fill="none" strokeWidth="2.5" />
               <path d={flow.d} className="gallery-path-highlight" pathLength="1" fill="none" />
-              <circle r="5" className={`gallery-packet gallery-packet-${flow.tone}`} filter="url(#flow-glow)">
+
+              {/* Smooth gliding packet with soft outer glow */}
+              <circle r="7" className={`gallery-packet gallery-packet-${flow.tone}`} opacity="0.3" filter="url(#flow-glow)">
                 <animateMotion
                   dur={flow.duration}
-                  repeatCount={isFailed && flow.id === 'run-e2e' ? '3' : 'indefinite'}
+                  repeatCount={isFailed && flow.id === 'run-e2e' ? '4' : 'indefinite'}
                   path={flow.d}
+                  calcMode="spline"
+                  keyTimes="0; 1"
+                  keySplines="0.42 0 0.58 1"
                 />
               </circle>
-              <text style={{
-                fill: flow.tone === 'danger' ? '#ff7875' : flow.tone === 'amber' ? '#ffc069' : '#5cdbd3',
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.04em'
-              }}>
-                <textPath href={`#path-${flow.id}`} startOffset="50%" textAnchor="middle">
+              <circle r="4.5" className={`gallery-packet gallery-packet-${flow.tone}`} filter="url(#flow-glow)">
+                <animateMotion
+                  dur={flow.duration}
+                  repeatCount={isFailed && flow.id === 'run-e2e' ? '4' : 'indefinite'}
+                  path={flow.d}
+                  calcMode="spline"
+                  keyTimes="0; 1"
+                  keySplines="0.42 0 0.58 1"
+                />
+              </circle>
+
+              {/* Upright, horizontal badge pill - NEVER inverted or tilted */}
+              <g transform={`translate(${flow.labelX}, ${flow.labelY})`}>
+                <rect
+                  x={-flow.labelWidth / 2}
+                  y="-12"
+                  width={flow.labelWidth}
+                  height="22"
+                  rx="11"
+                  fill="rgba(10, 16, 26, 0.94)"
+                  stroke={flow.tone === 'danger' ? 'rgba(255, 77, 79, 0.65)' : flow.tone === 'amber' ? 'rgba(232, 163, 61, 0.65)' : 'rgba(79, 209, 197, 0.65)'}
+                  strokeWidth="1.2"
+                />
+                <text
+                  x="0"
+                  y="3.5"
+                  textAnchor="middle"
+                  style={{
+                    fill: flow.tone === 'danger' ? '#ff7875' : flow.tone === 'amber' ? '#ffc069' : '#5cdbd3',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    fontFamily: 'var(--mono)',
+                    letterSpacing: '0.03em',
+                  }}
+                >
                   {flow.label}
-                </textPath>
-              </text>
+                </text>
+              </g>
             </g>
           ))}
         </svg>
@@ -222,7 +278,8 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
               top: `${node.y / 5}%`,
               transform: 'translate(-50%, -50%)',
               position: 'absolute',
-              zIndex: 10
+              zIndex: 10,
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <span
