@@ -61,8 +61,14 @@ export function CicdPipelineSandbox() {
   }, [deployState, injectFailure])
 
   return (
-    <div className="sandbox-page fade-in">
-      <NavBrand href="/#projects" />
+    <div className="sandbox-shell fade-in">
+      <nav className="sandbox-topbar">
+        <div className="container sandbox-topbar-inner">
+          <NavBrand href="/#projects" />
+          <div className="sandbox-breadcrumb">SANDBOX / CI/CD AUTOMATION · v0.5.7</div>
+          <a className="sandbox-back" href="/#projects">← back to projects</a>
+        </div>
+      </nav>
       <main>
         <section className="sandbox-hero section">
           <div className="container">
@@ -211,6 +217,16 @@ export function CicdPipelineSandbox() {
                 <strong>neehar2601 / DevOps-Refresher ↗</strong>
                 <small>View the development branch, GitHub Actions workflow, and Playwright tests.</small>
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="section" style={{ paddingTop: '1rem', paddingBottom: '3rem' }}>
+          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid var(--line-soft)', paddingTop: '2rem' }}>
+            <a className="button" href="/#projects">← Back to featured systems</a>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <a className="button" href="https://github.com/neehar2601/DevOps-Refresher" target="_blank" rel="noreferrer">GitHub Repository ↗</a>
+              <a className="button primary" href="https://devopslearnercorner.org/" target="_blank" rel="noreferrer">Open Live DevOps Hub ↗</a>
             </div>
           </div>
         </section>

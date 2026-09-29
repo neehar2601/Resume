@@ -99,7 +99,7 @@ export default function App() {
           <div className="container">
             <div className="section-header">
               <h2>Featured systems</h2>
-              <span>04 — operate them, don't just read them</span>
+              <span>05 — operate them, don't just read them</span>
               <div className="section-rule" />
             </div>
             <div className="project-grid">
