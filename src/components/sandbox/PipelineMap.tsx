@@ -4,28 +4,38 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
   const isFailed = deployState === 'failed'
 
   const nodes = [
-    { id: 'github', x: 150, y: 150, title: 'GitHub', subtitle: 'development branch', badge: 'SOURCE', active: activeIndex >= 0 },
-    { id: 'actions', x: 400, y: 150, title: 'Actions Runner', subtitle: 'ubuntu-latest', badge: 'CI', active: activeIndex >= 1, accent: true },
-    { id: 's3test', x: 650, y: 150, title: 'S3 (Test)', subtitle: 'devops-learner', badge: 'STORAGE', active: activeIndex >= 2 },
-    { id: 'e2e', x: 900, y: 150, title: 'Playwright', subtitle: 'E2E suite', badge: 'TEST', active: activeIndex >= 3, failed: isFailed && activeIndex === 3 },
-    { id: 's3prod', x: 900, y: 350, title: 'S3 (Prod)', subtitle: 'devopslearnercorner.org', badge: 'STORAGE', active: activeIndex >= 4 },
-    { id: 'cf', x: 650, y: 350, title: 'CloudFront', subtitle: 'CDN cache', badge: 'DELIVERY', active: activeIndex >= 5 },
-    { id: 'live', x: 400, y: 350, title: 'Users', subtitle: 'HTTPS traffic', badge: 'TRAFFIC', active: activeIndex >= 6 },
+    { id: 'dev', x: 100, y: 250, title: 'Developer', subtitle: 'git push', badge: 'USER', active: activeIndex >= 0 },
+    { id: 'github', x: 300, y: 250, title: 'GitHub Actions', subtitle: 'CI orchestrator', badge: 'CI/CD', active: activeIndex >= 1, accent: true },
+    
+    // Playwright sits on the path to S3 Test
+    { id: 'e2e', x: 475, y: 100, title: 'Playwright', subtitle: 'E2E testing', badge: 'TEST', active: activeIndex >= 3, failed: isFailed && activeIndex === 3 },
+    
+    { id: 's3test', x: 650, y: 100, title: 'S3 (Test)', subtitle: 'devops-learner', badge: 'STORAGE', active: activeIndex >= 2 },
+    { id: 's3prod', x: 650, y: 250, title: 'S3 (Prod)', subtitle: 'devopslearnercorner.org', badge: 'STORAGE', active: activeIndex >= 4 },
+    { id: 'cf', x: 650, y: 400, title: 'CloudFront', subtitle: 'CDN cache', badge: 'DELIVERY', active: activeIndex >= 5 },
+    
+    { id: 'client', x: 850, y: 400, title: 'Users', subtitle: 'HTTPS traffic', badge: 'TRAFFIC', active: activeIndex >= 6 },
   ]
 
   const paths = [
     // 0: Push
-    { id: 'push', d: 'M200 150 L350 150', label: 'push', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 0 },
-    // 1: Actions -> S3 Test
-    { id: 'deploy-test', d: 'M450 150 L600 150', label: 'aws s3 sync', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 2 },
-    // 2: S3 Test -> Playwright
-    { id: 'run-e2e', d: 'M700 150 L850 150', label: 'npx playwright test', tone: isFailed ? 'danger' : 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 3 },
-    // 3: Playwright -> S3 Prod (Downwards)
-    { id: 'deploy-prod', d: 'M900 200 L900 300', label: 'aws s3 sync (prod)', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 4 && !isFailed },
-    // 4: S3 Prod -> CloudFront (Leftwards)
-    { id: 'invalidate', d: 'M850 350 L700 350', label: 'invalidate /*', tone: 'amber', duration: '2.0s', delay: '0s', active: activeIndex >= 5 && !isFailed },
-    // 5: CloudFront -> Users (Leftwards)
-    { id: 'serve', d: 'M600 350 L450 350', label: 'HTTPS live', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 6 && !isFailed },
+    { id: 'push', d: 'M150 250 L250 250', label: 'push', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 0 },
+    
+    // 2: GitHub -> S3 Test (Arcs up to avoid Playwright node)
+    { id: 'deploy-test', d: 'M300 230 Q 475 20 650 80', label: 's3 sync (test)', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 2 },
+    
+    // 3: GitHub -> Playwright -> S3 Test
+    { id: 'run-e2e', d: 'M330 220 L425 120', label: 'run tests', tone: isFailed ? 'danger' : 'amber', duration: '1.5s', delay: '0s', active: activeIndex >= 3 },
+    { id: 'verify-e2e', d: 'M525 100 L600 100', label: 'verify HTTP', tone: isFailed ? 'danger' : 'amber', duration: '1.5s', delay: '0.75s', active: activeIndex >= 3 },
+    
+    // 4: GitHub -> S3 Prod (Straight across)
+    { id: 'deploy-prod', d: 'M350 250 L600 250', label: 's3 sync (prod)', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 4 && !isFailed },
+    
+    // 5: GitHub -> CloudFront (Diagonal down)
+    { id: 'invalidate', d: 'M330 280 L600 390', label: 'invalidate /*', tone: 'amber', duration: '2.5s', delay: '0s', active: activeIndex >= 5 && !isFailed },
+    
+    // 6: Users -> CloudFront
+    { id: 'serve', d: 'M800 400 L700 400', label: 'access site', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 6 && !isFailed },
   ]
 
   return (
@@ -67,7 +77,7 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
                 <animateMotion
                   dur={flow.duration}
                   begin={flow.delay}
-                  repeatCount={isFailed && flow.id === 'run-e2e' ? '2' : 'indefinite'}
+                  repeatCount={isFailed && (flow.id === 'run-e2e' || flow.id === 'verify-e2e') ? '2' : 'indefinite'}
                   path={flow.d}
                 />
               </circle>
@@ -90,7 +100,7 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
           >
             <span className="gallery-live-node-badge" style={(node as any).failed ? { color: '#ff4d4f', borderBottomColor: '#ff4d4f' } : {}}>{node.badge}</span>
             <div className="gallery-live-node-icon" style={(node as any).failed ? { color: '#ff4d4f' } : {}}>
-               {node.id === 'github' ? '◆' : node.id === 'actions' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : node.id === 'live' ? '◉' : '▱'}
+               {node.id === 'dev' || node.id === 'client' ? '◉' : node.id === 'github' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : '▱'}
             </div>
             <strong style={(node as any).failed ? { color: '#ff4d4f' } : {}}>{node.title}</strong>
             <small>{node.subtitle}</small>
