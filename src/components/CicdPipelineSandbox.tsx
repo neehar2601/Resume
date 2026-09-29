@@ -80,6 +80,22 @@ export function CicdPipelineSandbox() {
                 >
                   {deployState === 'running' ? 'Pipeline Running...' : deployState === 'idle' ? 'Push to development branch' : 'Run Pipeline Again'}
                 </button>
+                <a
+                  className="button"
+                  href="https://devopslearnercorner.org/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Live DevOps Hub ↗
+                </a>
+                <a
+                  className="button"
+                  href="https://github.com/neehar2601/DevOps-Refresher"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub Repository ↗
+                </a>
               </div>
             </div>
 
@@ -130,7 +146,15 @@ export function CicdPipelineSandbox() {
                   )}
                   {deployState === 'success' && (
                     <span className="terminal-line ok" style={{ marginTop: '0.5rem' }}>
-                      Success: Pipeline completed. Production site is live!
+                      Success: Pipeline completed! Production site is live at{' '}
+                      <a
+                        href="https://devopslearnercorner.org/"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: '#58a6ff', textDecoration: 'underline' }}
+                      >
+                        devopslearnercorner.org ↗
+                      </a>
                     </span>
                   )}
                 </div>
@@ -155,6 +179,27 @@ export function CicdPipelineSandbox() {
                 <span>stage 3</span><strong>Deploy to Prod</strong>
                 <pre style={{ fontSize: '11px', overflowX: 'auto', background: '#0d1117', padding: '10px', borderRadius: '4px', marginTop: '10px' }}>{ymlProd}</pre>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section sandbox-section">
+          <div className="container">
+            <div className="sandbox-section-heading">
+              <span>02 / live environment &amp; source</span>
+              <h2>DevOps Hub Deployment &amp; Repository</h2>
+            </div>
+            <div className="source-grid">
+              <a className="source-card source-card-live" href="https://devopslearnercorner.org/" target="_blank" rel="noreferrer">
+                <span className="control-label">live production hub</span>
+                <strong>devopslearnercorner.org ↗</strong>
+                <small>Explore the live site served through AWS CloudFront &amp; S3.</small>
+              </a>
+              <a className="source-card" href="https://github.com/neehar2601/DevOps-Refresher" target="_blank" rel="noreferrer">
+                <span className="control-label">source repository</span>
+                <strong>neehar2601 / DevOps-Refresher ↗</strong>
+                <small>View the development branch, GitHub Actions workflow, and Playwright tests.</small>
+              </a>
             </div>
           </div>
         </section>

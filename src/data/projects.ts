@@ -92,7 +92,7 @@ export const projects: Project[] = [
     title: 'Automated CI/CD with E2E Gating',
     subtitle: 'Deployment pipeline from GitHub Actions to S3 with Playwright end-to-end tests gating the production release.',
     description:
-      'Explore the CI/CD pipeline used for the DevOps Learner Corner website. This simulates pushing to a test environment, executing automated Playwright E2E tests, and only promoting to the CloudFront production environment if all tests pass.',
+      'Explore the CI/CD pipeline powering the live DevOps Hub (devopslearnercorner.org). This simulates pushing to a test environment, executing automated Playwright E2E tests, and promoting to the CloudFront production environment only when all tests pass.',
     tags: ['GitHub Actions', 'Playwright', 'S3', 'CloudFront', 'CI/CD', 'Automated Testing'],
     stages: [
       { id: 'github', name: 'GitHub', detail: 'commit', short: 'GH' },
