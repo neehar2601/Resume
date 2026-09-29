@@ -66,12 +66,12 @@ export function CicdPipelineSandbox() {
       <main>
         <section className="sandbox-hero section">
           <div className="container">
-            <div className="sandbox-hero-head">
+            <div className="sandbox-hero-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
               <div className="sandbox-hero-title">
                 <h1>CI/CD Pipeline with Automated E2E Gating</h1>
                 <p>GitHub Actions · Playwright · AWS S3 · CloudFront</p>
               </div>
-              <div className="sandbox-hero-actions">
+              <div className="sandbox-hero-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
                 <button
                   type="button"
                   className="button primary"

@@ -4,39 +4,145 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
   const isFailed = deployState === 'failed'
 
   const nodes = [
-    { id: 'dev', x: 100, y: 250, title: 'Developer', subtitle: 'git push', badge: 'USER', active: activeIndex >= 0 },
-    { id: 'github', x: 300, y: 250, title: 'GitHub Actions', subtitle: 'CI orchestrator', badge: 'CI/CD', active: activeIndex >= 1, accent: true },
-    
-    // Playwright sits on the path to S3 Test
-    { id: 'e2e', x: 475, y: 100, title: 'Playwright', subtitle: 'E2E testing', badge: 'TEST', active: activeIndex >= 3, failed: isFailed && activeIndex === 3 },
-    
-    { id: 's3test', x: 650, y: 100, title: 'S3 (Test)', subtitle: 'devops-learner', badge: 'STORAGE', active: activeIndex >= 2 },
-    { id: 's3prod', x: 650, y: 250, title: 'S3 (Prod)', subtitle: 'devopslearnercorner.org', badge: 'STORAGE', active: activeIndex >= 4 },
-    { id: 'cf', x: 650, y: 400, title: 'CloudFront', subtitle: 'CDN cache', badge: 'DELIVERY', active: activeIndex >= 5 },
-    
-    { id: 'client', x: 850, y: 400, title: 'Users', subtitle: 'HTTPS traffic', badge: 'TRAFFIC', active: activeIndex >= 6 },
+    {
+      id: 'dev',
+      x: 80,
+      y: 250,
+      title: 'Developer',
+      subtitle: 'git push origin',
+      badge: 'USER',
+      active: activeIndex === 0,
+    },
+    {
+      id: 'github',
+      x: 280,
+      y: 250,
+      title: 'GitHub Actions',
+      subtitle: 'CI orchestrator',
+      badge: 'CI/CD',
+      active: activeIndex >= 1,
+      accent: true,
+    },
+
+    // Top Row: Test Environment & Validation
+    {
+      id: 's3test',
+      x: 550,
+      y: 120,
+      title: 'S3 (Test Bucket)',
+      subtitle: 'staging environment',
+      badge: 'STORAGE',
+      active: activeIndex === 2 || activeIndex === 3,
+    },
+    {
+      id: 'e2e',
+      x: 820,
+      y: 120,
+      title: 'Playwright E2E',
+      subtitle: 'automated testing',
+      badge: 'TEST',
+      active: activeIndex === 3,
+      failed: isFailed && activeIndex === 3,
+    },
+
+    // Bottom Row: Production Storage, CDN, and Users
+    {
+      id: 's3prod',
+      x: 520,
+      y: 380,
+      title: 'S3 (Production)',
+      subtitle: 'origin storage',
+      badge: 'STORAGE',
+      active: activeIndex === 4 || activeIndex === 6 || deployState === 'success',
+    },
+    {
+      id: 'cf',
+      x: 730,
+      y: 380,
+      title: 'CloudFront',
+      subtitle: 'CDN edge cache',
+      badge: 'DELIVERY',
+      active: activeIndex === 5 || activeIndex === 6 || deployState === 'success',
+    },
+    {
+      id: 'client',
+      x: 930,
+      y: 380,
+      title: 'End Users',
+      subtitle: 'devopslearnercorner.org',
+      badge: 'TRAFFIC',
+      active: activeIndex === 6 || deployState === 'success',
+    },
   ]
 
+  // Only the currently executing stage has isWorking: true
   const paths = [
-    // 0: Push
-    { id: 'push', d: 'M150 250 L250 250', label: 'push', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 0 },
-    
-    // 2: GitHub -> S3 Test (Arcs up to avoid Playwright node)
-    { id: 'deploy-test', d: 'M300 230 Q 475 20 650 80', label: 's3 sync (test)', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 2 },
-    
-    // 3: GitHub -> Playwright -> S3 Test
-    { id: 'run-e2e', d: 'M330 220 L425 120', label: 'run tests', tone: isFailed ? 'danger' : 'amber', duration: '1.5s', delay: '0s', active: activeIndex >= 3 },
-    { id: 'verify-e2e', d: 'M525 100 L600 100', label: 'verify HTTP', tone: isFailed ? 'danger' : 'amber', duration: '1.5s', delay: '0.75s', active: activeIndex >= 3 },
-    
-    // 4: GitHub -> S3 Prod (Straight across)
-    { id: 'deploy-prod', d: 'M350 250 L600 250', label: 's3 sync (prod)', tone: 'teal', duration: '2.5s', delay: '0s', active: activeIndex >= 4 && !isFailed },
-    
-    // 5: GitHub -> CloudFront (Diagonal down)
-    { id: 'invalidate', d: 'M330 280 L600 390', label: 'invalidate /*', tone: 'amber', duration: '2.5s', delay: '0s', active: activeIndex >= 5 && !isFailed },
-    
-    // 6: Users -> CloudFront
-    { id: 'serve', d: 'M800 400 L700 400', label: 'access site', tone: 'teal', duration: '2.0s', delay: '0s', active: activeIndex >= 6 && !isFailed },
+    // Stage 0: Developer pushes to GitHub Actions
+    {
+      id: 'push',
+      d: 'M 140 250 L 220 250',
+      label: 'git push',
+      tone: 'teal',
+      duration: '1.6s',
+      isWorking: activeIndex === 0,
+    },
+    // Stage 2: GitHub Actions pushes data to test S3 bucket
+    {
+      id: 'deploy-test',
+      d: 'M 280 205 Q 280 120 485 120',
+      label: 'aws s3 sync (test)',
+      tone: 'teal',
+      duration: '2.0s',
+      isWorking: activeIndex === 2,
+    },
+    // Stage 3: Playwright runs E2E tests against test S3 bucket
+    {
+      id: 'run-e2e',
+      d: 'M 755 120 L 615 120',
+      label: isFailed ? 'tests failed' : 'playwright test URL',
+      tone: isFailed ? 'danger' : 'amber',
+      duration: '1.5s',
+      isWorking: activeIndex === 3,
+    },
+    // Stage 4: GitHub Actions syncs data to production S3 bucket
+    {
+      id: 'deploy-prod',
+      d: 'M 280 295 Q 280 380 455 380',
+      label: 'aws s3 sync (prod)',
+      tone: 'teal',
+      duration: '2.0s',
+      isWorking: activeIndex === 4 && !isFailed,
+    },
+    // Stage 5: GitHub Actions invalidates CloudFront cache
+    {
+      id: 'invalidate',
+      d: 'M 345 270 Q 520 270 670 340',
+      label: 'invalidate cache /*',
+      tone: 'amber',
+      duration: '2.0s',
+      isWorking: activeIndex === 5 && !isFailed,
+    },
+    // Stage 6 / Live: CloudFront fetching / serving origin from S3 Production
+    {
+      id: 'cf-to-prod',
+      d: 'M 665 380 L 585 380',
+      label: 'origin connection',
+      tone: 'teal',
+      duration: '1.8s',
+      isWorking: (activeIndex === 6 || deployState === 'success') && !isFailed,
+    },
+    // Stage 6 / Live: End Users requesting content from CloudFront
+    {
+      id: 'serve',
+      d: 'M 870 380 L 795 380',
+      label: 'HTTPS requests',
+      tone: 'teal',
+      duration: '1.8s',
+      isWorking: (activeIndex === 6 || deployState === 'success') && !isFailed,
+    },
   ]
+
+  const activePaths = paths.filter((p) => p.isWorking)
 
   return (
     <div className="gallery-live-map" style={{ marginTop: '2rem' }}>
@@ -44,15 +150,15 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         <div>
           <span className="control-label">pipeline architecture map</span>
           <strong>CI/CD Workflow Execution</strong>
-          <p>Visually tracking the artifact from source code to production delivery.</p>
+          <p>Moving lines animate only on the currently active stage.</p>
         </div>
         <div className="gallery-flow-legend">
-          <span><i className="legend-dot teal" /> deployment flow</span>
-          <span><i className="legend-dot amber" /> test / control flow</span>
+          <span><i className="legend-dot teal" /> active stage packet</span>
+          <span><i className="legend-dot amber" /> validation / cache control</span>
         </div>
       </div>
-      
-      <div className="gallery-live-map-canvas" style={{ minHeight: '480px' }}>
+
+      <div className="gallery-live-map-canvas" style={{ minHeight: '500px' }}>
         <div className="gallery-grid-overlay" />
         <svg className="gallery-flow-svg" viewBox="0 0 1000 500" role="img" aria-label="Pipeline routing map">
           <defs>
@@ -63,32 +169,47 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            
-            {paths.filter(p => p.active).map((flow) => (
+
+            {paths.map((flow) => (
               <path key={`def-${flow.id}`} id={`path-${flow.id}`} d={flow.d} />
             ))}
           </defs>
 
-          {paths.filter(p => p.active).map((flow) => (
-            <g key={flow.id}>
-              <path d={flow.d} className={`gallery-path gallery-path-${flow.tone}`} />
-              <path d={flow.d} className="gallery-path-highlight" pathLength="1" />
-              <circle r="4.5" className={`gallery-packet gallery-packet-${flow.tone}`} filter="url(#flow-glow)">
+          {/* Faint static dashed topology paths showing entire architecture */}
+          {paths.map((flow) => (
+            <path
+              key={`bg-${flow.id}`}
+              d={flow.d}
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+              fill="none"
+            />
+          ))}
+
+          {/* Active moving packets ONLY on working stages */}
+          {activePaths.map((flow) => (
+            <g key={`active-${flow.id}`}>
+              <path d={flow.d} className={`gallery-path gallery-path-${flow.tone}`} fill="none" />
+              <path d={flow.d} className="gallery-path-highlight" pathLength="1" fill="none" />
+              <circle r="5" className={`gallery-packet gallery-packet-${flow.tone}`} filter="url(#flow-glow)">
                 <animateMotion
                   dur={flow.duration}
-                  begin={flow.delay}
-                  repeatCount={isFailed && (flow.id === 'run-e2e' || flow.id === 'verify-e2e') ? '2' : 'indefinite'}
+                  repeatCount={isFailed && flow.id === 'run-e2e' ? '3' : 'indefinite'}
                   path={flow.d}
                 />
               </circle>
+              <text style={{
+                fill: flow.tone === 'danger' ? '#ff7875' : flow.tone === 'amber' ? '#ffc069' : '#5cdbd3',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.04em'
+              }}>
+                <textPath href={`#path-${flow.id}`} startOffset="50%" textAnchor="middle">
+                  {flow.label}
+                </textPath>
+              </text>
             </g>
-          ))}
-          {paths.filter(p => p.active).map((flow) => (
-             <text key={`label-${flow.id}`} style={{ fill: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>
-               <textPath href={`#path-${flow.id}`} startOffset="50%" textAnchor="middle">
-                 {flow.label}
-               </textPath>
-             </text>
           ))}
         </svg>
 
@@ -96,11 +217,25 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
           <div
             key={node.id}
             className={`gallery-live-node ${node.accent ? 'accent' : ''} ${!node.active ? 'muted' : ''} ${(node as any).failed ? 'failed-node' : ''}`}
-            style={{ left: `${node.x / 10}%`, top: `${node.y / 5}%`, transform: 'translate(-50%, -50%)', position: 'absolute', zIndex: 10 }}
+            style={{
+              left: `${node.x / 10}%`,
+              top: `${node.y / 5}%`,
+              transform: 'translate(-50%, -50%)',
+              position: 'absolute',
+              zIndex: 10
+            }}
           >
-            <span className="gallery-live-node-badge" style={(node as any).failed ? { color: '#ff4d4f', borderBottomColor: '#ff4d4f' } : {}}>{node.badge}</span>
-            <div className="gallery-live-node-icon" style={(node as any).failed ? { color: '#ff4d4f' } : {}}>
-               {node.id === 'dev' || node.id === 'client' ? '◉' : node.id === 'github' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : '▱'}
+            <span
+              className="gallery-live-node-badge"
+              style={(node as any).failed ? { color: '#ff4d4f', borderBottomColor: '#ff4d4f' } : {}}
+            >
+              {node.badge}
+            </span>
+            <div
+              className="gallery-live-node-icon"
+              style={(node as any).failed ? { color: '#ff4d4f', borderColor: '#ff4d4f' } : {}}
+            >
+              {node.id === 'dev' || node.id === 'client' ? '◉' : node.id === 'github' ? '⚙' : node.id === 'e2e' ? '⚡' : node.id === 'cf' ? '↯' : '▱'}
             </div>
             <strong style={(node as any).failed ? { color: '#ff4d4f' } : {}}>{node.title}</strong>
             <small>{node.subtitle}</small>
@@ -108,10 +243,13 @@ export function PipelineMap({ activeIndex, deployState }: { activeIndex: number;
         ))}
 
         <div className="gallery-live-flow-status">
-          <span className="live-pulse" style={isFailed ? { background: '#ff4d4f', boxShadow: '0 0 10px rgba(255, 77, 79, 0.5)' } : {}} />
-          {deployState === 'idle' ? 'pipeline idle' : deployState === 'failed' ? 'pipeline blocked by E2E failure' : deployState === 'success' ? 'deployment complete' : 'pipeline is running'}
+          <span
+            className="live-pulse"
+            style={isFailed ? { background: '#ff4d4f', boxShadow: '0 0 10px rgba(255, 77, 79, 0.5)' } : {}}
+          />
+          {deployState === 'idle' ? 'pipeline idle — ready to push' : deployState === 'failed' ? 'pipeline blocked: Playwright E2E failed' : deployState === 'success' ? 'live: users connecting via CloudFront to S3 Prod' : 'pipeline is executing active stage'}
           {activeIndex >= 0 && <b>·</b>}
-          {activeIndex >= 0 && (isFailed ? 'Production sync aborted' : `Executing Stage ${activeIndex + 1}/7`)}
+          {activeIndex >= 0 && (isFailed ? 'Production release gated' : `Stage ${activeIndex + 1}/7`)}
         </div>
       </div>
     </div>
