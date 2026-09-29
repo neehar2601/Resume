@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { NavBrand } from './NavBrand'
 
 type GalleryStage = 1 | 2 | 3 | 4
 
@@ -155,10 +156,16 @@ export function ImageGallerySandbox() {
 
   return (
     <div className="sandbox-page image-gallery-page">
-      <div className="container sandbox-topbar">
-        <a className="sandbox-back" href="/">← back to portfolio</a>
-        <a className="sandbox-back" href={GITHUB_URL} target="_blank" rel="noreferrer">source ↗</a>
-      </div>
+      <header className="sandbox-topbar">
+        <div className="container sandbox-topbar-inner">
+          <NavBrand href="/#projects" />
+          <div className="sandbox-breadcrumb">SANDBOX / DYNAMIC IMAGE GALLERY · v0.5.7</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifySelf: 'end' }}>
+            <a className="sandbox-back" href={GITHUB_URL} target="_blank" rel="noreferrer">source ↗</a>
+            <a className="sandbox-back" href="/#projects">← back to projects</a>
+          </div>
+        </div>
+      </header>
 
       <main>
         <section className="sandbox-hero image-hero">
