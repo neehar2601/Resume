@@ -944,3 +944,7 @@ a { color: inherit; }
   .college-trace-step i { display:none; }
   .college-tls-flow { justify-content:flex-start; flex-wrap:wrap; }
 }
+
+.gallery-path-danger { stroke: rgba(255, 77, 79, 0.72); }
+.gallery-packet-danger { fill: #ff4d4f; }
+.failed-node { border-color: rgba(255, 77, 79, 0.4) !important; background: rgba(255, 77, 79, 0.05) !important; }

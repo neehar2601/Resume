@@ -40,6 +40,13 @@ export function ProjectCard({ project }: { project: Project }) {
                 <a className="button primary" href="/sandbox/collegefest">Open deployment sandbox →</a>
               </div>
             )}
+            {project.id === 'cicd-pipeline' && (
+              <div className="cta-row project-sandbox-link">
+                <a className="button primary" href="/sandbox/cicd-pipeline">Open CI/CD sandbox →</a>
+                <a className="button" href="https://devopslearnercorner.org/" target="_blank" rel="noreferrer">Open live DevOps Hub ↗</a>
+                <a className="button" href="https://github.com/neehar2601/DevOps-Refresher" target="_blank" rel="noreferrer">GitHub repo ↗</a>
+              </div>
+            )}
             <Pipeline project={project} />
           </div>
         </div>
