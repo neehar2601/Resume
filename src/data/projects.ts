@@ -90,9 +90,9 @@ export const projects: Project[] = [
     id: 'cicd-pipeline',
     index: '05',
     title: 'Automated CI/CD with E2E Gating',
-    subtitle: 'Deployment pipeline from GitHub Actions to S3 with Playwright end-to-end tests gating the production release.',
+    subtitle: 'Secure S3 static hosting + CloudFront free-tier metrics with automated Playwright staging gates.',
     description:
-      'Explore the CI/CD pipeline powering the live DevOps Hub (devopslearnercorner.org). This simulates pushing to a test environment, executing automated Playwright E2E tests, and promoting to the CloudFront production environment only when all tests pass.',
+      'Explore the CI/CD pipeline powering the live DevOps Hub (devopslearnercorner.org). Built leveraging AWS expertise with secure S3 static hosting, CloudFront free tier for HTTPS and built-in edge access metrics without extra monitoring spend, and GitHub Actions with Playwright automated release gating.',
     tags: ['GitHub Actions', 'Playwright', 'S3', 'CloudFront', 'CI/CD', 'Automated Testing'],
     stages: [
       { id: 'github', name: 'GitHub', detail: 'commit', short: 'GH' },

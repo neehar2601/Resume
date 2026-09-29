@@ -203,7 +203,46 @@ export function CicdPipelineSandbox() {
         <section className="section sandbox-section">
           <div className="container">
             <div className="sandbox-section-heading">
-              <span>02 / live environment &amp; source</span>
+              <span>02 / design rationale &amp; tradeoffs</span>
+              <h2>Why S3, CloudFront Free Tier &amp; GitHub Actions?</h2>
+            </div>
+            <div className="college-decision-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+              <article className="college-decision-card">
+                <span>WHY S3 STATIC HOSTING?</span>
+                <strong>Familiar AWS tooling &amp; proven security.</strong>
+                <p>
+                  Having hands-on expertise with AWS cloud services, S3 static website hosting was the natural choice. It provides a secure, reliable foundation for static web assets without the server management overhead, patching, or idle infrastructure costs of running EC2 or containers.
+                </p>
+              </article>
+              <article className="college-decision-card">
+                <span>WHY CLOUDFRONT FREE TIER?</span>
+                <strong>Free built-in metrics &amp; SSL without extra monitoring spend.</strong>
+                <p>
+                  Instead of spending extra budget on third-party monitoring tools or dedicated logging infrastructure, CloudFront's free tier provides native HTTPS SSL/TLS protection, fast global edge caching, and built-in access metrics (viewer locations, request counts, HTTP error rates, and cache hit ratios) out of the box.
+                </p>
+              </article>
+              <article className="college-decision-card">
+                <span>WHY GITHUB ACTIONS?</span>
+                <strong>Frictionless CI/CD &amp; native secret integration.</strong>
+                <p>
+                  Integrating deployment workflows directly into GitHub Actions eliminated the need for a separate self-hosted CI server. Secrets (AWS keys and CloudFront distribution IDs) are securely managed natively, enabling simple <code>aws s3 sync</code> and cache invalidation on every push.
+                </p>
+              </article>
+              <article className="college-decision-card">
+                <span>WHY PLAYWRIGHT E2E GATING?</span>
+                <strong>Automated staging verification before production release.</strong>
+                <p>
+                  Gating the production deployment ensures that broken commits never touch <code>devopslearnercorner.org</code>. Playwright runs headless browser regression checks against the staging S3 bucket first, and only promotes to production and invalidates edge caches once all tests pass.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="section sandbox-section">
+          <div className="container">
+            <div className="sandbox-section-heading">
+              <span>03 / live environment &amp; source</span>
               <h2>DevOps Hub Deployment &amp; Repository</h2>
             </div>
             <div className="source-grid">
