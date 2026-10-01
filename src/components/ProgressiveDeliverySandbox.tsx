@@ -49,6 +49,7 @@ export function ProgressiveDeliverySandbox() {
   const [selectedNode, setSelectedNode] = useState<string | null>('github')
   const [errorSeries, setErrorSeries] = useState<MetricPoint[]>(baseErrorSeries)
   const [latencySeries, setLatencySeries] = useState<MetricPoint[]>(baseLatencySeries)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false)
 
   const statusLabel = useMemo(() => {
     switch (phase) {
@@ -66,7 +67,7 @@ export function ProgressiveDeliverySandbox() {
 
   // Delivery chain: GitHub → Jenkins → Docker → Helm → Argo CD → Kubernetes.
   useEffect(() => {
-    if (phase !== 'build') return
+    if (phase !== 'build' || !isAutoPlaying) return
 
     const timer = window.setTimeout(() => {
       if (activeStage < 4) {
@@ -74,16 +75,18 @@ export function ProgressiveDeliverySandbox() {
       } else {
         setPhase('sync')
       }
-    }, 850)
+    }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [phase, activeStage])
+  }, [phase, activeStage, isAutoPlaying])
 
   // GitOps sync hands traffic control to Istio, Prometheus and Flagger.
   useEffect(() => {
     if (phase !== 'sync') return
 
     setActiveStage(5) // Stage 5: Kubernetes schedules Canary Pod on Node 02
+
+    if (!isAutoPlaying) return
 
     const timer = window.setTimeout(() => {
       const first = metricForTraffic(10)
@@ -95,14 +98,14 @@ export function ProgressiveDeliverySandbox() {
       setErrorSeries((points) => [...points, { label: '10', value: first.error }])
       setLatencySeries((points) => [...points, { label: '10', value: first.latency }])
       setPhase('canary')
-    }, 950)
+    }, 1000)
 
     return () => window.clearTimeout(timer)
-  }, [phase])
+  }, [phase, isAutoPlaying])
 
   // The normal rollout continuously evaluates and increases canary traffic in 10% steps.
   useEffect(() => {
-    if (phase !== 'canary') return
+    if (phase !== 'canary' || !isAutoPlaying) return
     if (traffic >= 100) {
       setPhase('promoting')
       return
@@ -196,6 +199,7 @@ export function ProgressiveDeliverySandbox() {
   }, [phase])
 
   const deploy = () => {
+    setIsAutoPlaying(true)
     setPhase('build')
     setActiveStage(0)
     setTraffic(0)
@@ -207,7 +211,106 @@ export function ProgressiveDeliverySandbox() {
     setLatencySeries(baseLatencySeries)
   }
 
+  const handleStepNext = () => {
+    setIsAutoPlaying(false)
+    if (activeStage < 0 || phase === 'idle') {
+      setPhase('build')
+      setActiveStage(0)
+      setTraffic(0)
+      return
+    }
+    if (activeStage < 4) {
+      setActiveStage(activeStage + 1)
+      return
+    }
+    if (activeStage === 4) {
+      setActiveStage(5)
+      setPhase('sync')
+      return
+    }
+    if (activeStage === 5) {
+      const first = metricForTraffic(10)
+      setActiveStage(6)
+      setTraffic(10)
+      setErrorRate(first.error)
+      setLatency(first.latency)
+      setRequests(first.requests)
+      setErrorSeries((points) => [...points, { label: '10', value: first.error }])
+      setLatencySeries((points) => [...points, { label: '10', value: first.latency }])
+      setPhase('canary')
+      return
+    }
+    if (activeStage === 6) {
+      setActiveStage(7)
+      return
+    }
+    if (activeStage === 7) {
+      setActiveStage(8)
+      return
+    }
+    if (activeStage === 8) {
+      const nextTraffic = Math.min(traffic + 10, 100)
+      if (preArmFailure && nextTraffic === 50) {
+        setTraffic(50)
+        setErrorRate(8.2)
+        setLatency(298)
+        setRequests(96)
+        setErrorSeries((points) => [...points, { label: '50!', value: 8.2 }])
+        setLatencySeries((points) => [...points, { label: '50!', value: 298 }])
+        setRollbackFrom(50)
+        setPhase('failed')
+        return
+      }
+      const next = metricForTraffic(nextTraffic)
+      setTraffic(nextTraffic)
+      setErrorRate(next.error)
+      setLatency(next.latency)
+      setRequests(next.requests)
+      setErrorSeries((points) => [...points, { label: `${nextTraffic}`, value: next.error }])
+      setLatencySeries((points) => [...points, { label: `${nextTraffic}`, value: next.latency }])
+      if (nextTraffic === 100) {
+        setPhase('promoting')
+      }
+    }
+  }
+
+  const handleStepPrev = () => {
+    setIsAutoPlaying(false)
+    if (traffic > 10) {
+      const prevTraffic = traffic - 10
+      const prevMetric = metricForTraffic(prevTraffic)
+      setTraffic(prevTraffic)
+      setErrorRate(prevMetric.error)
+      setLatency(prevMetric.latency)
+      setRequests(prevMetric.requests)
+      return
+    }
+    if (traffic === 10) {
+      setTraffic(0)
+      setActiveStage(5)
+      setPhase('sync')
+      return
+    }
+    if (activeStage > 0) {
+      setActiveStage(activeStage - 1)
+      if (activeStage - 1 < 5) {
+        setPhase('build')
+      }
+    } else {
+      reset()
+    }
+  }
+
+  const toggleAutoPlay = () => {
+    if (phase === 'idle' || activeStage < 0) {
+      deploy()
+    } else {
+      setIsAutoPlaying(!isAutoPlaying)
+    }
+  }
+
   const reset = () => {
+    setIsAutoPlaying(false)
     setPhase('idle')
     setActiveStage(-1)
     setTraffic(0)
@@ -391,7 +494,19 @@ export function ProgressiveDeliverySandbox() {
 
         <section className="section sandbox-section">
           <div className="container">
-            <TrafficMap traffic={traffic} phase={phase} activeStage={activeStage} />
+            <TrafficMap
+              traffic={traffic}
+              phase={phase}
+              activeStage={activeStage}
+              errorRate={errorRate}
+              latency={latency}
+              onStepNext={handleStepNext}
+              onStepPrev={handleStepPrev}
+              onAutoPlay={toggleAutoPlay}
+              isAutoPlaying={isAutoPlaying}
+              onReset={reset}
+              onInjectFailure={injectFailure}
+            />
             <div style={{ height: '4rem' }} />
             <div className="sandbox-section-heading"><span>01 / architecture</span><h2>The release decision loop</h2></div>
             <ArchitectureDiagram activeNode={selectedNode} onSelect={setSelectedNode} />
