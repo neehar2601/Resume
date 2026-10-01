@@ -1,6 +1,6 @@
 import { NavBrand } from './NavBrand'
 import { useEffect, useMemo, useState } from 'react'
-import { ArchitectureDiagram } from './sandbox/ArchitectureDiagram'
+import { InfrastructureArchitecture } from './sandbox/InfrastructureArchitecture'
 import { TrafficMap } from './sandbox/TrafficMap'
 import { MetricsPanel } from './sandbox/MetricsPanel'
 import { Terminal } from './sandbox/Terminal'
@@ -494,7 +494,11 @@ export function ProgressiveDeliverySandbox() {
 
         <section className="section sandbox-section">
           <div className="container">
-            <TrafficMap
+            <TrafficMap traffic={traffic} />
+
+            <div style={{ height: '4rem' }} />
+            <div className="sandbox-section-heading"><span>01 / architecture</span><h2>End-to-End Infrastructure Architecture</h2></div>
+            <InfrastructureArchitecture
               traffic={traffic}
               phase={phase}
               activeStage={activeStage}
@@ -507,9 +511,6 @@ export function ProgressiveDeliverySandbox() {
               onReset={reset}
               onInjectFailure={injectFailure}
             />
-            <div style={{ height: '4rem' }} />
-            <div className="sandbox-section-heading"><span>01 / architecture</span><h2>The release decision loop</h2></div>
-            <ArchitectureDiagram activeNode={selectedNode} onSelect={setSelectedNode} />
           </div>
         </section>
 

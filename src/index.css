@@ -2990,3 +2990,440 @@ a { color: inherit; }
     flex-direction: column;
   }
 }
+
+
+/* ========================================================================= */
+/* Progressive Delivery: Promotion Banner & States                          */
+/* ========================================================================= */
+.promotion-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(79, 209, 197, 0.12) 100%);
+  border: 1px solid rgba(79, 209, 197, 0.4);
+  box-shadow: 0 0 24px rgba(79, 209, 197, 0.15);
+  animation: banner-glow 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes banner-glow {
+  0% { box-shadow: 0 0 16px rgba(79, 209, 197, 0.15); border-color: rgba(79, 209, 197, 0.3); }
+  100% { box-shadow: 0 0 28px rgba(79, 209, 197, 0.35); border-color: rgba(79, 209, 197, 0.6); }
+}
+
+.promo-banner-badge {
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: var(--teal);
+  color: #0d1117;
+  font: 700 10px var(--mono);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.promo-banner-text strong {
+  display: block;
+  font: 700 13px var(--sans);
+  color: #e6edf3;
+  margin-bottom: 2px;
+}
+
+.promo-banner-text p {
+  margin: 0;
+  font: 11px var(--sans);
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.promo-banner-text code {
+  color: var(--teal);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.pod-card.promoted-primary {
+  border-color: rgba(79, 209, 197, 0.5) !important;
+  background: linear-gradient(180deg, rgba(79, 209, 197, 0.12) 0%, rgba(13, 17, 23, 0.85) 100%) !important;
+  box-shadow: 0 0 20px rgba(79, 209, 197, 0.25) !important;
+}
+
+.infra-card.canary-pod-card.standby-canary {
+  border-color: rgba(79, 209, 197, 0.3) !important;
+  background: rgba(13, 17, 23, 0.5) !important;
+  opacity: 0.85;
+}
+
+/* ========================================================================= */
+/* Progressive Delivery: Live Traffic Splitting Visualization Strip          */
+/* ========================================================================= */
+.traffic-split-visual-strip {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(79, 209, 197, 0.25);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.split-visual-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font: 700 10px var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--teal);
+}
+
+.split-visual-header small {
+  font: 9px var(--mono);
+  color: var(--muted);
+  letter-spacing: normal;
+}
+
+.split-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+  margin-right: 6px;
+  animation: pulse-stream-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-stream-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.split-streams-container {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.split-stream-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line-soft);
+  transition: all 0.3s ease;
+}
+
+.split-stream-branch.active-stream {
+  border-color: rgba(79, 209, 197, 0.35);
+  background: rgba(79, 209, 197, 0.05);
+}
+
+.split-stream-branch.stream-canary.active-stream {
+  border-color: rgba(232, 163, 61, 0.4);
+  background: rgba(232, 163, 61, 0.05);
+}
+
+.split-stream-branch.failed-stream {
+  border-color: rgba(255, 77, 79, 0.4);
+  background: rgba(255, 77, 79, 0.06);
+}
+
+.stream-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 9px var(--mono);
+}
+
+.stream-pill {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font: 700 8.5px var(--mono);
+  letter-spacing: 0.05em;
+}
+
+.stream-pill.stable {
+  background: rgba(79, 209, 197, 0.2);
+  color: var(--teal);
+  border: 1px solid rgba(79, 209, 197, 0.4);
+}
+
+.stream-pill.canary {
+  background: rgba(232, 163, 61, 0.2);
+  color: var(--amber);
+  border: 1px solid rgba(232, 163, 61, 0.4);
+}
+
+.stream-pill.danger {
+  background: rgba(255, 77, 79, 0.2);
+  color: #ff7875;
+  border: 1px solid rgba(255, 77, 79, 0.4);
+}
+
+.split-stream-branch small {
+  font: 8px var(--mono);
+  color: var(--muted);
+}
+
+/* Fluid Conduit Pipes */
+.stream-pipe {
+  position: relative;
+  height: 12px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.stream-fluid {
+  position: relative;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.stable-fluid {
+  background: linear-gradient(90deg, #10b981 0%, #4fd1c5 100%);
+  box-shadow: 0 0 10px rgba(79, 209, 197, 0.6);
+}
+
+.canary-fluid {
+  background: linear-gradient(90deg, #f59e0b 0%, #e8a33d 100%);
+  box-shadow: 0 0 10px rgba(232, 163, 61, 0.6);
+}
+
+.danger-fluid {
+  background: linear-gradient(90deg, #dc2626 0%, #ff4d4f 100%);
+  box-shadow: 0 0 10px rgba(255, 77, 79, 0.6);
+}
+
+/* Particle Animation along the fluid pipe */
+.fluid-particle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  opacity: 0.9;
+}
+
+.fluid-particle.p1 {
+  animation: particle-flow 1.5s infinite linear;
+}
+.fluid-particle.p2 {
+  animation: particle-flow 1.5s infinite linear;
+  animation-delay: 0.5s;
+}
+.fluid-particle.p3 {
+  animation: particle-flow 1.5s infinite linear;
+  animation-delay: 1.0s;
+}
+
+@keyframes particle-flow {
+  0% { left: -5%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 105%; opacity: 0; }
+}
+
+.split-gateway-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.gateway-prism {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(79, 209, 197, 0.25) 0%, rgba(232, 163, 61, 0.25) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 18px var(--mono);
+  color: #e6edf3;
+  box-shadow: 0 0 14px rgba(79, 209, 197, 0.25);
+  animation: prism-pulse 2s infinite ease-in-out;
+}
+
+@keyframes prism-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(79, 209, 197, 0.25); }
+  50% { transform: scale(1.08); box-shadow: 0 0 20px rgba(79, 209, 197, 0.5); }
+}
+
+.gateway-prism-label {
+  font: 700 8.5px var(--mono);
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* ========================================================================= */
+/* Floating / Sticky Interactive Control Dock                                */
+/* ========================================================================= */
+.floating-control-dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(79, 209, 197, 0.45);
+  border-radius: 999px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 28px rgba(79, 209, 197, 0.22);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 95vw;
+}
+
+.floating-control-dock:hover {
+  border-color: rgba(79, 209, 197, 0.75);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.9), 0 0 36px rgba(79, 209, 197, 0.35);
+}
+
+.dock-stage-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.dock-pill {
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(79, 209, 197, 0.15);
+  border: 1px solid rgba(79, 209, 197, 0.4);
+  color: var(--teal);
+  font: 700 10px var(--mono);
+  letter-spacing: 0.05em;
+}
+
+.dock-weights {
+  font: 10px var(--mono);
+  color: var(--muted);
+}
+
+.dock-weights b {
+  color: #e6edf3;
+}
+
+.dock-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dock-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e6edf3;
+  font: 600 11px var(--mono);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dock-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.dock-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.dock-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dock-btn.primary {
+  background: linear-gradient(135deg, #10b981 0%, #4fd1c5 100%);
+  color: #0d1117;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 0 12px rgba(79, 209, 197, 0.4);
+}
+
+.dock-btn.primary:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(79, 209, 197, 0.7);
+  transform: translateY(-1px);
+}
+
+.dock-btn.auto-active {
+  background: rgba(232, 163, 61, 0.2);
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 12px rgba(232, 163, 61, 0.4);
+}
+
+.dock-btn.danger {
+  border-color: rgba(255, 77, 79, 0.4);
+  color: #ff7875;
+}
+
+.dock-btn.danger:hover:not(:disabled) {
+  background: rgba(255, 77, 79, 0.15);
+  border-color: #ff4d4f;
+  box-shadow: 0 0 12px rgba(255, 77, 79, 0.4);
+}
+
+.dock-btn.reset {
+  color: var(--muted);
+}
+
+.dock-btn.reset:hover:not(:disabled) {
+  color: #e6edf3;
+}
+
+@media (max-width: 768px) {
+  .floating-control-dock {
+    bottom: 12px;
+    padding: 6px 10px;
+    gap: 8px;
+    border-radius: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .dock-stage-info {
+    border-right: none;
+    padding-right: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .split-streams-container {
+    grid-template-columns: 1fr;
+  }
+  .split-gateway-center {
+    transform: rotate(90deg);
+    margin: 8px 0;
+  }
+}
+
