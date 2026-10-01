@@ -11,16 +11,17 @@ const stages = ['GitHub', 'Jenkins', 'Docker', 'Helm', 'Argo CD', 'Kubernetes', 
 const trafficSteps = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 const techDetails = [
-  ['github', 'GitHub', 'Source control', 'A commit is the trigger for the delivery chain.'],
-  ['jenkins', 'Jenkins', 'Continuous integration', 'Builds, tests and produces the application artifact in the modeled flow.'],
-  ['helm', 'Helm', 'Packaging', 'Represents the Kubernetes release package consumed by the deployment path.'],
-  ['argocd', 'Argo CD', 'GitOps delivery', 'Keeps the cluster aligned with the desired application state.'],
-  ['istio', 'Istio', 'Traffic control', 'Splits request traffic between stable and canary revisions.'],
-  ['prom', 'Prometheus', 'Observability', 'Supplies the error and latency signals used for analysis.'],
-  ['flagger', 'Flagger', 'Progressive analysis', 'Evaluates metrics and decides whether to promote or rollback.'],
-  ['k8s', 'Kubernetes', 'Runtime', 'Runs the workload revisions and the services that receive traffic.'],
-  ['stable', 'Stable v1', 'Baseline', 'The known-good revision that receives traffic during the rollout.'],
-  ['canary', 'Canary v2', 'Candidate', 'The new revision exposed to a controlled percentage of traffic.'],
+  ['github', 'GitHub', 'Source & Helm Repository', 'Houses application source code, git tags (v2.4.0), and the Helm chart repository.'],
+  ['jenkins', 'Jenkins CI', 'Continuous Integration', 'Compiles code, runs tests, executes docker build -t app:v2.4.0, pushes to Docker Hub, and commits updated image tags to the Helm repository.'],
+  ['docker', 'Docker Hub', 'Container Registry', 'Stores immutable tagged container images (registry/cafe-web:v2.4.0) produced by the Jenkins CI pipeline.'],
+  ['helm', 'Helm', 'Packaging & Release Manifests', 'Versioned Helm charts defining Kubernetes deployments; values.yaml image.tag is updated by Jenkins to trigger GitOps.'],
+  ['argocd', 'Argo CD', 'In-Cluster GitOps Delivery', 'Continuously monitors GitHub for Helm chart updates and reconciles the desired state into the Kubernetes cluster.'],
+  ['k8s', 'Multi-Node Kubernetes', 'Distributed Cluster Runtime', 'Runs workloads across Node 01 (worker-alpha: Ingress + Stable) and Node 02 (worker-beta: Canary + Observability) connected via CNI.'],
+  ['istio', 'Istio Service Mesh', 'Traffic Control & Gateway', 'Ingress Gateway and VirtualService on Node 01 dynamically shift HTTP traffic between stable and canary revisions without downtime.'],
+  ['stable', 'Stable Pods (v1)', 'Production Baseline', 'The proven revision (v2.3.0) running on Node 01 (worker-alpha), serving baseline production traffic.'],
+  ['canary', 'Canary Pod (v2.4.0)', 'Deployment Candidate', 'The newly packaged release running on Node 02 (worker-beta) with an Istio Envoy sidecar proxy receiving experimental traffic.'],
+  ['prom', 'Prometheus', 'Real-Time Observability', 'Scrapes HTTP error rates, request rates, and p95 latency from Canary Envoy sidecars on Node 02.'],
+  ['flagger', 'Flagger Controller', 'Progressive Delivery Operator', 'Executes metric analysis on Node 02 and commands the Istio VirtualService on Node 01 to advance weights or trigger automated rollback.'],
 ]
 
 const baseErrorSeries: MetricPoint[] = [
@@ -73,7 +74,7 @@ export function ProgressiveDeliverySandbox() {
       } else {
         setPhase('sync')
       }
-    }, 420)
+    }, 850)
 
     return () => window.clearTimeout(timer)
   }, [phase, activeStage])
@@ -82,9 +83,11 @@ export function ProgressiveDeliverySandbox() {
   useEffect(() => {
     if (phase !== 'sync') return
 
+    setActiveStage(5) // Stage 5: Kubernetes schedules Canary Pod on Node 02
+
     const timer = window.setTimeout(() => {
       const first = metricForTraffic(10)
-      setActiveStage(8)
+      setActiveStage(8) // Stage 8: Flagger analysis & routing control loop
       setTraffic(10)
       setErrorRate(first.error)
       setLatency(first.latency)
@@ -92,7 +95,7 @@ export function ProgressiveDeliverySandbox() {
       setErrorSeries((points) => [...points, { label: '10', value: first.error }])
       setLatencySeries((points) => [...points, { label: '10', value: first.latency }])
       setPhase('canary')
-    }, 650)
+    }, 950)
 
     return () => window.clearTimeout(timer)
   }, [phase])
@@ -330,6 +333,49 @@ export function ProgressiveDeliverySandbox() {
               ))}
             </div>
 
+            {activeStage >= 0 && (
+              <div className="stage-detail-callout" style={{
+                marginTop: '1rem',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                background: 'rgba(10, 16, 24, 0.75)',
+                border: '1px solid var(--line-soft)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                fontFamily: 'var(--mono)',
+                fontSize: '11px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: phase === 'failed' ? '#ff4d4f' : activeStage < 5 ? '#e8a33d' : '#4fd1c5',
+                    boxShadow: phase === 'failed' ? '0 0 8px rgba(255, 77, 79, 0.8)' : '0 0 8px rgba(79, 209, 197, 0.6)',
+                  }} />
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>
+                    {activeStage === 0 && 'Stage 01 [GitHub]: Release tag v2.4.0 pushed. Webhook triggers Jenkins CI pipeline.'}
+                    {activeStage === 1 && 'Stage 02 [Jenkins]: Jenkins compiles code, runs test suite, and builds Docker image (docker build -t cafe-web:v2.4.0 .).'}
+                    {activeStage === 2 && 'Stage 03 [Docker Hub]: Jenkins pushes tagged image (cafe-web:v2.4.0) to container registry.'}
+                    {activeStage === 3 && 'Stage 04 [Helm]: Jenkins updates charts/cafe-web/values.yaml (tag: v2.4.0) and commits to Git repository.'}
+                    {activeStage === 4 && 'Stage 05 [Argo CD]: Argo CD detects Helm chart commit, pulling changes and initiating GitOps sync.'}
+                    {activeStage === 5 && 'Stage 06 [Kubernetes]: Cluster schedules Canary Pod v2.4.0 on Node 02 (worker-beta) with Envoy sidecar.'}
+                    {activeStage === 6 && 'Stage 07 [Istio]: Ingress Gateway & VirtualService on Node 01 initialize traffic diversion across nodes.'}
+                    {activeStage === 7 && 'Stage 08 [Prometheus]: Scraping HTTP error rate and p95 latency from Canary Envoy sidecar on Node 02.'}
+                    {activeStage === 8 && (phase === 'failed'
+                      ? 'Stage 09 [Flagger]: Metric threshold exceeded! Flagger triggers instant automated rollback to 100% Stable v1.'
+                      : 'Stage 09 [Flagger]: Real-time analysis loop active. Evaluating metrics and commanding Istio VirtualService weights.')}
+                  </span>
+                </div>
+                <code style={{ color: 'var(--amber)', fontSize: '10px' }}>
+                  {activeStage <= 3 ? 'Jenkins CI Pipeline' : activeStage === 4 ? 'GitOps Controller' : 'Multi-Node Cluster'}
+                </code>
+              </div>
+            )}
+
             {(phase === 'failed' || phase === 'rollback') && (
               <div className={`rollback-panel ${phase}`}>
                 <div>
@@ -345,7 +391,7 @@ export function ProgressiveDeliverySandbox() {
 
         <section className="section sandbox-section">
           <div className="container">
-            <TrafficMap traffic={traffic} />
+            <TrafficMap traffic={traffic} phase={phase} activeStage={activeStage} />
             <div style={{ height: '4rem' }} />
             <div className="sandbox-section-heading"><span>01 / architecture</span><h2>The release decision loop</h2></div>
             <ArchitectureDiagram activeNode={selectedNode} onSelect={setSelectedNode} />

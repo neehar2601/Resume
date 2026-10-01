@@ -1,16 +1,17 @@
 import type { SandboxNode } from '../../types/sandbox'
 
 const nodes: SandboxNode[] = [
-  { id: 'github', name: 'GitHub', role: 'source', detail: 'commit / pull request', group: 'delivery' },
-  { id: 'jenkins', name: 'Jenkins', role: 'CI', detail: 'build + test + image', group: 'delivery' },
-  { id: 'helm', name: 'Helm', role: 'package', detail: 'release manifest', group: 'delivery' },
-  { id: 'argocd', name: 'Argo CD', role: 'CD', detail: 'desired state sync', group: 'delivery' },
-  { id: 'istio', name: 'Istio', role: 'traffic', detail: 'route 90/10 → 100/0', group: 'platform' },
-  { id: 'stable', name: 'Stable v1', role: 'service', detail: 'known-good revision', group: 'platform' },
-  { id: 'canary', name: 'Canary v2', role: 'service', detail: 'candidate revision', group: 'platform' },
-  { id: 'prom', name: 'Prometheus', role: 'metrics', detail: 'error + latency', group: 'observability' },
-  { id: 'flagger', name: 'Flagger', role: 'analysis', detail: 'promote or rollback', group: 'observability' },
-  { id: 'k8s', name: 'Kubernetes', role: 'control plane', detail: 'deployments + services', group: 'platform' },
+  { id: 'github', name: 'GitHub', role: 'source', detail: 'tag v2.4.0 / Helm Git', group: 'delivery' },
+  { id: 'jenkins', name: 'Jenkins', role: 'CI runner', detail: 'docker build + test', group: 'delivery' },
+  { id: 'docker', name: 'Docker Hub', role: 'registry', detail: 'push cafe-web:v2.4.0', group: 'delivery' },
+  { id: 'helm', name: 'Helm', role: 'package', detail: 'values.yaml tag bumped', group: 'delivery' },
+  { id: 'argocd', name: 'Argo CD', role: 'GitOps CD', detail: 'pulls & syncs into K8s', group: 'delivery' },
+  { id: 'istio', name: 'Istio', role: 'traffic (Node 01)', detail: 'route 90/10 → 100/0', group: 'platform' },
+  { id: 'stable', name: 'Stable v1', role: 'pod (Node 01)', detail: 'baseline v2.3.0', group: 'platform' },
+  { id: 'canary', name: 'Canary v2', role: 'pod (Node 02)', detail: 'candidate v2.4.0', group: 'platform' },
+  { id: 'prom', name: 'Prometheus', role: 'metrics (Node 02)', detail: 'scrapes Envoy telemetry', group: 'observability' },
+  { id: 'flagger', name: 'Flagger', role: 'operator (Node 02)', detail: 'evaluates & drives Istio', group: 'observability' },
+  { id: 'k8s', name: 'Multi-Node K8s', role: 'cluster runtime', detail: 'worker-alpha & worker-beta', group: 'platform' },
 ]
 
 export function ArchitectureDiagram({ activeNode, onSelect }: { activeNode: string | null; onSelect: (id: string) => void }) {
@@ -29,29 +30,29 @@ export function ArchitectureDiagram({ activeNode, onSelect }: { activeNode: stri
 
   return (
     <div className="architecture-diagram">
-      <div className="architecture-row delivery-row">
-        {nodes.slice(0, 4).map(renderNode)}
+      <div className="architecture-row delivery-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+        {nodes.slice(0, 5).map(renderNode)}
       </div>
-      <div className="architecture-rail rail-delivery"><span>desired state / release path</span></div>
+      <div className="architecture-rail rail-delivery"><span>CI/CD build → packaging → GitOps sync to multi-node cluster</span></div>
       <div className="architecture-row split-row">
         <div className="arch-stack">
-          {renderNode(nodes[4])}
+          {renderNode(nodes[5])}
           <div className="arch-down">↓</div>
           <div className="arch-service-pair">
-            {renderNode(nodes[5])}
             {renderNode(nodes[6])}
+            {renderNode(nodes[7])}
           </div>
         </div>
         <div className="arch-control-column">
-          {renderNode(nodes[9])}
+          {renderNode(nodes[10])}
           <div className="arch-down">↕</div>
-          {renderNode(nodes[7])}
-          <div className="arch-down">↓</div>
           {renderNode(nodes[8])}
+          <div className="arch-down">↓</div>
+          {renderNode(nodes[9])}
         </div>
       </div>
       <div className="architecture-caption">
-        Traffic is shifted by Istio while Prometheus supplies signals to Flagger. The sandbox visualizes the decision loop without connecting to a live cluster.
+        Jenkins builds and pushes the Docker container and updates Helm charts. Argo CD syncs into the multi-node Kubernetes cluster. Istio shifts traffic between worker-alpha and worker-beta while Prometheus supplies telemetry to Flagger for evaluation.
       </div>
     </div>
   )
