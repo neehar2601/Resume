@@ -1,4 +1,5 @@
 import { NavBrand } from './NavBrand'
+import { AwsCafeTopology } from './sandbox/AwsCafeTopology'
 import { useEffect, useMemo, useState } from 'react'
 
 type ArchitectureLevel = 1 | 2 | 3 | 4 | 5 | 6
@@ -111,6 +112,7 @@ export function CafeWebsiteSandbox() {
   const [lastReport, setLastReport] = useState('not run')
   const [question, setQuestion] = useState('why')
   const [securityFocus, setSecurityFocus] = useState<'overview' | 'alb' | 'ec2' | 'rds' | 'lambda'>('overview')
+  const [viewMode, setViewMode] = useState<'topology' | 'simplified'>('topology')
 
   const current = decisions[level - 1]
   const hasAlb = level >= 4
@@ -197,21 +199,66 @@ export function CafeWebsiteSandbox() {
               </div>
             </div>
 
-            <div className="cafe-architecture-card">
-              <div className="cafe-arch-heading">
+            <div style={{ marginTop: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
-                  <span className="control-label">reference architecture at current stage</span>
-                  <strong>{level < 6 ? 'single-region production shape' : 'repeatable infrastructure / regional deployment'}</strong>
+                  <span className="control-label" style={{ display: 'block', fontSize: '10px', color: 'var(--teal)', letterSpacing: '0.1em' }}>ARCHITECTURE TOPOLOGY VIEW</span>
+                  <strong style={{ fontSize: '1.1rem', color: 'var(--text)' }}>
+                    {viewMode === 'topology' ? 'AWS High-Fidelity Topology Diagram (VPC / Multi-AZ / Subnets / SGs)' : 'Simplified High-Level Flow'}
+                  </strong>
                 </div>
-                <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className={`button ${viewMode === 'topology' ? 'primary' : ''}`}
+                    onClick={() => setViewMode('topology')}
+                    style={{ fontSize: '11px', padding: '6px 12px' }}
+                  >
+                    🗺 Full Topology Diagram
+                  </button>
+                  <button
+                    type="button"
+                    className={`button ${viewMode === 'simplified' ? 'primary' : ''}`}
+                    onClick={() => setViewMode('simplified')}
+                    style={{ fontSize: '11px', padding: '6px 12px' }}
+                  >
+                    ⚡ Simplified Flow
+                  </button>
+                </div>
               </div>
 
-              {level < 6 ? <CurrentArchitecture level={level} instanceCount={instanceCount} hasAlb={hasAlb} hasRds={hasRds} hasReporting={hasReporting} /> : <InfrastructureAsCodeArchitecture />}
+              {viewMode === 'topology' ? (
+                <AwsCafeTopology
+                  level={level}
+                  instanceCount={instanceCount}
+                  traffic={traffic}
+                  hasAlb={hasAlb}
+                  hasRds={hasRds}
+                  hasReporting={hasReporting}
+                  onSelectLevel={evolveTo}
+                  onTrafficBurst={runTrafficBurst}
+                  onResetTraffic={resetTraffic}
+                  onRunReport={runLambdaReport}
+                  reportRuns={reportRuns}
+                />
+              ) : (
+                <div className="cafe-architecture-card">
+                  <div className="cafe-arch-heading">
+                    <div>
+                      <span className="control-label">reference architecture at current stage</span>
+                      <strong>{level < 6 ? 'single-region production shape' : 'repeatable infrastructure / regional deployment'}</strong>
+                    </div>
+                    <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
+                  </div>
 
-              <div className="architecture-note">
-                <span>Design principle</span>
-                <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
-              </div>
+                  {level < 6 ? <CurrentArchitecture level={level} instanceCount={instanceCount} hasAlb={hasAlb} hasRds={hasRds} hasReporting={hasReporting} /> : <InfrastructureAsCodeArchitecture />}
+
+                  <div className="architecture-note">
+                    <span>Design principle</span>
+                    <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="cafe-control-grid">
