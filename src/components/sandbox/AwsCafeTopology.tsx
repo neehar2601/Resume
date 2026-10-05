@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 
 export type ArchitectureLevel = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -30,8 +30,6 @@ const TONE: Record<Tone, string> = {
 const INK = '#edf2f7'
 const MUTED = '#93a0b1'
 const FAINT = '#5d6878'
-
-type Line = string | { t: string; c: string }
 
 interface Flow {
   id: string
@@ -106,24 +104,22 @@ const ARCH_STEPS: [string, string][] = [
 function FlowLine({ flow, index }: { flow: Flow; index: number }) {
   const color = TONE[flow.tone]
   const dur = flow.dur ?? 2.4
-  const isTelemetry = flow.tone === 'sky'
-  const packets = isTelemetry ? 1 : dur >= 3.2 ? 2 : 1
-  const lineOpacity = flow.on ? (isTelemetry ? 0.45 : 1) : 0.15
+  const packets = dur >= 3.2 ? 2 : 1
   return (
-    <g opacity={lineOpacity}>
+    <g opacity={flow.on ? 1 : 0.18}>
       <path
         d={flow.d}
         fill="none"
         stroke={color}
-        strokeWidth={flow.on ? (isTelemetry ? 1.4 : 2.1) : 1.2}
+        strokeWidth={flow.on ? 2.2 : 1.2}
         strokeLinejoin="round"
         strokeLinecap="round"
-        strokeDasharray={isTelemetry ? '3 5' : flow.on ? undefined : '4 6'}
-        className={flow.on && !isTelemetry ? 'af-line-on' : undefined}
+        strokeDasharray={flow.on ? undefined : '4 6'}
+        className={flow.on ? 'af-line-on' : undefined}
         markerEnd={`url(#aws-arrow-${flow.tone})`}
       />
       {flow.on && Array.from({ length: packets }).map((_, k) => (
-        <circle key={k} r={isTelemetry ? 2.6 : 3.6} fill={color} filter="url(#aws-glow)" className="af-packet">
+        <circle key={k} r="3.4" fill={color} filter="url(#aws-glow)" className="af-packet">
           <animateMotion
             dur={`${dur}s`}
             begin={`-${((index * 0.41 + (k * dur) / packets) % dur).toFixed(2)}s`}
@@ -132,43 +128,6 @@ function FlowLine({ flow, index }: { flow: Flow; index: number }) {
           />
         </circle>
       ))}
-    </g>
-  )
-}
-
-function Pill({
-  x,
-  y,
-  text,
-  badge,
-  tone,
-  on = true,
-}: {
-  x: number
-  y: number
-  text?: string
-  badge?: number
-  tone: Tone
-  on?: boolean
-}) {
-  const color = TONE[tone]
-  const w = (text ? text.length * 5.9 : 0) + (badge !== undefined ? 22 : 0) + 14
-  return (
-    <g opacity={on ? 1 : 0.45} transform={`translate(${x - w / 2}, ${y - 9})`}>
-      <rect width={w} height="18" rx="9" fill="#0a1018" stroke={color} strokeOpacity="0.75" />
-      {badge !== undefined && (
-        <>
-          <circle cx="11" cy="9" r="7" fill={color} />
-          <text x="11" y="12.3" textAnchor="middle" fontSize="9" fontWeight="800" fill="#0a1018">
-            {badge}
-          </text>
-        </>
-      )}
-      {text && (
-        <text x={badge !== undefined ? 22 : 7} y="12.6" fontSize="10" fontWeight="700" fill={color}>
-          {text}
-        </text>
-      )}
     </g>
   )
 }
@@ -194,41 +153,38 @@ export function AwsCafeTopology({
   const latency = level < 4 ? Math.round(105 + traffic * 2.15) : Math.max(58, Math.round(86 + (traffic * 0.92) / instanceCount))
   const dbConnections = hasRds ? Math.round(12 + traffic * 0.54) : 0
 
-  // Flows definition based on level
+  // Clean, non-intersecting flows definition based on level
   const flows: Flow[] = [
     // Level 1: Users to S3 directly
-    { id: 'f-s3', d: 'M130 385 C145 385 155 220 200 220', tone: 'teal', on: level === 1, dur: 1.8 },
-    // Levels 2+: Users to IGW -> ALB or EC2
-    { id: 'f-users-igw', d: 'M130 385 L200 385', tone: 'teal', on: level >= 2, dur: 1.2 },
-    // Level 2/3: IGW to single EC2
-    { id: 'f-igw-single-ec2', d: 'M230 385 L320 385', tone: 'teal', on: level === 2 || level === 3, dur: 1.5 },
+    { id: 'f-s3', d: 'M130 380 C150 380 160 214 200 214', tone: 'teal', on: level === 1, dur: 1.8 },
+    // Levels 2+: Users to IGW
+    { id: 'f-users-igw', d: 'M130 385 L145 385', tone: 'teal', on: level >= 2, dur: 1.2 },
+    // Level 2/3: IGW to single EC2 in Public Subnet
+    { id: 'f-igw-single-ec2', d: 'M200 385 L310 385', tone: 'teal', on: level === 2 || level === 3, dur: 1.5 },
     // Level 4+: IGW to ALB
-    { id: 'f-igw-alb', d: 'M230 385 L430 385', tone: 'teal', on: level >= 4, dur: 1.4 },
-    // Level 4+: ALB to EC2 AZ-a
-    { id: 'f-alb-ec2a', d: 'M480 430 C480 475 365 470 365 520', tone: 'teal', on: level >= 4, dur: 1.8 },
-    // Level 4+: ALB to EC2 AZ-b
-    { id: 'f-alb-ec2b', d: 'M560 430 C560 475 735 470 735 520', tone: 'teal', on: level >= 4, dur: 1.8 },
+    { id: 'f-igw-alb', d: 'M200 385 L440 385', tone: 'teal', on: level >= 4, dur: 1.4 },
+    // Level 4+: ALB to EC2 AZ-a (smooth S-curve cleanly in open channel)
+    { id: 'f-alb-ec2a', d: 'M510 435 C510 468 392 468 392 498', tone: 'teal', on: level >= 4, dur: 1.8 },
+    // Level 4+: ALB to EC2 AZ-b (smooth S-curve cleanly in open channel)
+    { id: 'f-alb-ec2b', d: 'M670 435 C670 468 797 468 797 498', tone: 'teal', on: level >= 4, dur: 1.8 },
     // Level 3: Single EC2 to RDS Primary
-    { id: 'f-ec2-rds-single', d: 'M365 430 C365 540 365 580 365 650', tone: 'amber', on: level === 3, dur: 1.8 },
-    // Level 4+: EC2 AZ-a to RDS Primary
-    { id: 'f-ec2a-rds', d: 'M365 600 L365 650', tone: 'amber', on: level >= 4, dur: 1.4 },
-    // Level 4+: EC2 AZ-b to RDS Primary across AZ
-    { id: 'f-ec2b-rds', d: 'M735 600 C735 635 465 630 465 665', tone: 'amber', on: level >= 4, dur: 2.2 },
-    // Level 4+: RDS Multi-AZ Replication (Primary AZ-a -> Standby AZ-b)
-    { id: 'f-rds-multiaz', d: 'M465 690 L650 690', tone: 'amber', on: level >= 4, dur: 2.8 },
+    { id: 'f-ec2-rds-single', d: 'M392 435 L392 663', tone: 'amber', on: level === 3, dur: 1.8 },
+    // Level 4+: EC2 AZ-a to RDS Primary (straight down without crossing text)
+    { id: 'f-ec2a-rds', d: 'M392 596 L392 663', tone: 'amber', on: level >= 4, dur: 1.4 },
+    // Level 4+: EC2 AZ-b to RDS Primary (clean corridor through the middle gap)
+    { id: 'f-ec2b-rds', d: 'M797 596 C797 635 480 635 480 663', tone: 'amber', on: level >= 4, dur: 2.2 },
+    // Level 4+: RDS Multi-AZ Replication (Primary AZ-a -> Standby AZ-b across dedicated gap)
+    { id: 'f-rds-multiaz', d: 'M540 715 L650 715', tone: 'amber', on: level >= 4, dur: 2.8 },
     // Level 5+: EventBridge to Lambda 1
-    { id: 'f-eb-l1', d: 'M1130 375 L1130 405', tone: 'violet', on: level >= 5, dur: 1.5 },
-    // Level 5+: Lambda 1 reading RDS
-    { id: 'f-l1-rds', d: 'M1045 445 C900 445 520 620 465 680', tone: 'violet', on: level >= 5, dur: 2.4 },
-    // Level 5+: Lambda 1 payload to Lambda 2 (Least Privilege boundary)
-    { id: 'f-l1-l2', d: 'M1130 485 L1130 545', tone: 'violet', on: level >= 5, dur: 1.2 },
+    { id: 'f-eb-l1', d: 'M1135 375 L1135 405', tone: 'violet', on: level >= 5, dur: 1.5 },
+    // Level 5+: Lambda 1 reading RDS (clean perimeter route along side corridor)
+    { id: 'f-l1-rds', d: 'M1050 445 L1010 445 Q998 445 998 460 L998 735 Q998 748 985 748 L540 748', tone: 'violet', on: level >= 5, dur: 2.6 },
+    // Level 5+: Lambda 1 payload to Lambda 2 (through Least Privilege barrier)
+    { id: 'f-l1-l2', d: 'M1135 485 L1135 505 M1135 540 L1135 560', tone: 'violet', on: level >= 5, dur: 1.2 },
     // Level 5+: Lambda 2 to SNS Topic
-    { id: 'f-l2-sns', d: 'M1130 615 L1130 635', tone: 'violet', on: level >= 5, dur: 1.2 },
+    { id: 'f-l2-sns', d: 'M1135 630 L1135 650', tone: 'violet', on: level >= 5, dur: 1.2 },
     // Level 5+: SNS to Subscribers
-    { id: 'f-sns-subs', d: 'M1130 695 L1130 715', tone: 'violet', on: level >= 5, dur: 1.2 },
-    // CloudWatch scraping telemetry
-    { id: 'f-cw-ec2', d: 'M365 520 C365 320 950 200 1030 200', tone: 'sky', on: level >= 2, dur: 3.5 },
-    { id: 'f-cw-rds', d: 'M465 650 C580 650 960 400 1030 220', tone: 'sky', on: level >= 3, dur: 3.8 },
+    { id: 'f-sns-subs', d: 'M1135 710 L1135 730', tone: 'violet', on: level >= 5, dur: 1.2 },
   ]
 
   return (
@@ -286,7 +242,7 @@ export function AwsCafeTopology({
               type="button"
               className="button step-btn"
               onClick={onResetTraffic}
-              title="Reset traffic to baseline"
+              title="Reset traffic to baseline (38 load)"
             >
               ↺ Reset
             </button>
@@ -295,7 +251,7 @@ export function AwsCafeTopology({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. Active Level Explainer Banner                                          */}
+      {/* 2. Active Level Explainer Card                                            */}
       {/* ========================================================================= */}
       <div className="active-stage-explainer-card">
         <div className="explainer-head">
@@ -319,7 +275,7 @@ export function AwsCafeTopology({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. High-Fidelity SVG Topology Canvas                                      */}
+      {/* 3. High-Fidelity SVG Topology Canvas (Clean & Spacious)                   */}
       {/* ========================================================================= */}
       <div className="infra-svg-wrap">
         <svg
@@ -330,7 +286,7 @@ export function AwsCafeTopology({
         >
           <defs>
             <filter id="aws-glow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur stdDeviation="2.4" result="b" />
+              <feGaussianBlur stdDeviation="2.2" result="b" />
               <feMerge>
                 <feMergeNode in="b" />
                 <feMergeNode in="SourceGraphic" />
@@ -353,36 +309,23 @@ export function AwsCafeTopology({
             ))}
           </defs>
 
-          {/* ---------- Legend (Top Left) ---------- */}
-          <text x="20" y="30" fontSize="9" letterSpacing="1.4" fill={FAINT}>
-            AWS TOPOLOGY LEGEND
+          {/* ---------- Clean Legend Panel (Top Left) ---------- */}
+          <rect x="20" y="20" width="510" height="90" rx="8" fill="rgba(10,16,24,0.75)" stroke="#1e293b" />
+          <text x="35" y="38" fontSize="9" fontWeight="700" letterSpacing="1.2" fill={FAINT}>
+            AWS TOPOLOGY LEGEND &amp; TRAFFIC PATHS
           </text>
-          {([
-            [20, 50, 'teal', 'User Web Traffic (HTTPS :443)'],
-            [20, 70, 'amber', 'Internal DB Queries (:3306) & Multi-AZ Sync'],
-            [20, 90, 'violet', 'Serverless Reporting (EventBridge ➔ Lambda ➔ SNS)'],
-            [370, 50, 'sky', 'CloudWatch Telemetry & Metrics'],
-            [370, 70, 'green', 'CloudFormation IaC Stack Automation'],
-          ] as [number, number, Tone, string][]).map(([lx, ly, t, label]) => (
-            <g key={label}>
-              <line
-                x1={lx}
-                y1={ly}
-                x2={lx + 24}
-                y2={ly}
-                stroke={TONE[t]}
-                strokeWidth="2.2"
-                markerEnd={`url(#aws-arrow-${t})`}
-              />
-              <text x={lx + 34} y={ly + 3.5} fontSize="9.5" fill={MUTED}>
-                {label}
-              </text>
-            </g>
-          ))}
-          <rect x="370" y="82" width="20" height="14" rx="3" fill="rgba(255,255,255,0.03)" stroke={TONE.amber} />
-          <text x="398" y="93" fontSize="9.5" fill={MUTED}>
-            Private Subnet Isolation Barrier
-          </text>
+          
+          <line x1="35" y1="58" x2="60" y2="58" stroke={TONE.teal} strokeWidth="2.2" markerEnd="url(#aws-arrow-teal)" />
+          <text x="68" y="61.5" fontSize="9" fill={INK}>User Web Ingress (HTTPS :443)</text>
+          
+          <line x1="35" y1="78" x2="60" y2="78" stroke={TONE.amber} strokeWidth="2.2" markerEnd="url(#aws-arrow-amber)" />
+          <text x="68" y="81.5" fontSize="9" fill={INK}>DB Queries &amp; Replication (:3306)</text>
+
+          <line x1="280" y1="58" x2="305" y2="58" stroke={TONE.violet} strokeWidth="2.2" markerEnd="url(#aws-arrow-violet)" />
+          <text x="313" y="61.5" fontSize="9" fill={INK}>Serverless Reporting (EventBridge ➔ λ ➔ SNS)</text>
+
+          <rect x="280" y="72" width="22" height="13" rx="3" fill="rgba(232,163,61,0.08)" stroke={TONE.amber} />
+          <text x="313" y="82.5" fontSize="9" fill={MUTED}>Private DB Subnet (Zero Internet Route)</text>
 
           {/* ---------- CloudFormation IaC Overlay Banner (Level 6) ---------- */}
           {level === 6 && (
@@ -391,8 +334,8 @@ export function AwsCafeTopology({
                 x="540"
                 y="20"
                 width="710"
-                height="86"
-                rx="10"
+                height="90"
+                rx="8"
                 fill="rgba(134,217,147,0.06)"
                 stroke={TONE.green}
                 strokeWidth="1.5"
@@ -417,51 +360,53 @@ export function AwsCafeTopology({
             </g>
           )}
 
-          {/* ---------- External: Users & Route 53 ---------- */}
+          {/* ---------- External: Users with Integrated Route 53 Header ---------- */}
           <g>
             <rect
               x="20"
-              y="335"
+              y="325"
               width="110"
-              height="100"
+              height="115"
               rx="12"
               fill="rgba(13,19,28,0.96)"
               stroke={TONE.teal}
               strokeOpacity="0.6"
             />
-            <text x="75" y="365" textAnchor="middle" fontSize="22" fill={TONE.teal}>
+            {/* Integrated Route 53 Badge */}
+            <rect x="25" y="312" width="100" height="20" rx="10" fill="#0a1018" stroke={TONE.sky} strokeWidth="1.2" />
+            <text x="75" y="325" textAnchor="middle" fontSize="9" fontWeight="700" fill={TONE.sky}>
+              Route 53 DNS
+            </text>
+            <text x="75" y="360" textAnchor="middle" fontSize="22" fill={TONE.teal}>
               ◉
             </text>
-            <text x="75" y="386" textAnchor="middle" fontSize="12" fontWeight="700" fill={INK}>
+            <text x="75" y="382" textAnchor="middle" fontSize="12" fontWeight="700" fill={INK}>
               Users
             </text>
-            <text x="75" y="401" textAnchor="middle" fontSize="8.5" fill={MUTED}>
+            <text x="75" y="398" textAnchor="middle" fontSize="8.5" fill={MUTED}>
               Web Browsers
             </text>
-            <text x="75" y="420" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.teal}>
+            <text x="75" y="422" textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
               {requests} req/min
             </text>
           </g>
 
-          {/* Route 53 DNS Pill */}
-          <Pill x={75} y={320} text="Route 53 DNS" tone="sky" />
-
           {/* ---------- AWS Cloud Boundary ---------- */}
           <rect
-            x="160"
+            x="155"
             y="130"
-            width="1090"
-            height="690"
+            width="1095"
+            height="695"
             rx="20"
-            fill="rgba(232,163,61,0.015)"
+            fill="rgba(232,163,61,0.012)"
             stroke="#263445"
             strokeWidth="1.5"
             strokeDasharray="8 6"
           />
-          <text x="180" y="152" fontSize="11" fontWeight="800" letterSpacing="1.2" fill={TONE.amber}>
+          <text x="175" y="152" fontSize="11" fontWeight="800" letterSpacing="1.2" fill={TONE.amber}>
             AWS CLOUD PLATFORM
           </text>
-          <text x="350" y="152" fontSize="9.5" fill={MUTED}>
+          <text x="345" y="152" fontSize="9.5" fill={MUTED}>
             Region: us-east-1 (N. Virginia) · IAM Roles &amp; Policies · Security Groups
           </text>
 
@@ -469,26 +414,26 @@ export function AwsCafeTopology({
           <g opacity={level === 1 ? 1 : 0.28}>
             <rect
               x="200"
-              y="175"
+              y="170"
               width="280"
-              height="78"
+              height="80"
               rx="10"
               fill="rgba(13,19,28,0.96)"
               stroke={TONE.teal}
               strokeWidth={level === 1 ? 1.8 : 1.2}
               strokeDasharray={level === 1 ? undefined : '5 5'}
             />
-            <text x="215" y="196" fontSize="11" fontWeight="700" fill={INK}>
+            <text x="215" y="193" fontSize="11" fontWeight="700" fill={INK}>
               Amazon S3 Bucket
             </text>
-            <text x="465" y="196" textAnchor="end" fontSize="8.5" letterSpacing="1" fill={TONE.teal}>
+            <text x="465" y="193" textAnchor="end" fontSize="8.5" letterSpacing="1" fill={TONE.teal}>
               STATIC SITE
             </text>
-            <text x="215" y="215" fontSize="9.5" fill={MUTED}>
+            <text x="215" y="213" fontSize="9.5" fill={MUTED}>
               bucket: <tspan fill={INK}>cafe-static-site</tspan>
             </text>
-            <text x="215" y="232" fontSize="9" fill={level === 1 ? TONE.teal : FAINT}>
-              {level === 1 ? '● Active Serving: HTML, CSS, JS, Images' : '○ Level 01 Baseline (No compute)'}
+            <text x="215" y="233" fontSize="9" fill={level === 1 ? TONE.teal : FAINT}>
+              {level === 1 ? '● Active: Public Read Policy (No compute servers)' : '○ Baseline: Static Website Endpoint'}
             </text>
           </g>
 
@@ -496,98 +441,104 @@ export function AwsCafeTopology({
           <g>
             <rect
               x="1030"
-              y="160"
-              width="200"
-              height="95"
+              y="150"
+              width="210"
+              height="105"
               rx="12"
               fill="rgba(13,19,28,0.96)"
               stroke={TONE.sky}
               strokeOpacity="0.75"
               strokeWidth="1.3"
             />
-            <text x="1045" y="180" fontSize="11" fontWeight="700" fill={INK}>
+            <circle cx="1048" cy="172" r="4" fill={TONE.teal} filter="url(#aws-glow)">
+              <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <text x="1058" y="176" fontSize="11" fontWeight="700" fill={INK}>
               Amazon CloudWatch
             </text>
-            <text x="1215" y="180" textAnchor="end" fontSize="8.5" letterSpacing="1" fill={TONE.sky}>
+            <text x="1225" y="176" textAnchor="end" fontSize="8.5" letterSpacing="1" fill={TONE.sky}>
               OBSERVE
             </text>
-            <text x="1045" y="200" fontSize="9" fill={MUTED}>
-              ALB Latency: <tspan fill={latency > 150 ? TONE.red : TONE.teal}>{latency}ms</tspan>
+            <text x="1045" y="196" fontSize="9" fill={MUTED}>
+              ALB Latency: <tspan fill={latency > 150 ? TONE.red : TONE.teal} fontWeight="700">{latency}ms</tspan>
             </text>
-            <text x="1045" y="216" fontSize="9" fill={MUTED}>
-              EC2 Avg CPU: <tspan fill={cpu > 80 ? TONE.red : TONE.teal}>{cpu.toFixed(0)}%</tspan>
+            <text x="1045" y="212" fontSize="9" fill={MUTED}>
+              EC2 Avg CPU: <tspan fill={cpu > 80 ? TONE.red : TONE.teal} fontWeight="700">{cpu.toFixed(0)}%</tspan>
             </text>
-            <text x="1045" y="232" fontSize="9" fill={MUTED}>
-              RDS Conns: <tspan fill={INK}>{hasRds ? dbConnections : 'N/A'}</tspan> · Runs: <tspan fill={TONE.violet}>{reportRuns}</tspan>
+            <text x="1045" y="228" fontSize="9" fill={MUTED}>
+              RDS Conns: <tspan fill={INK} fontWeight="700">{hasRds ? dbConnections : 'N/A'}</tspan> · Report Runs: <tspan fill={TONE.violet} fontWeight="700">{reportRuns}</tspan>
+            </text>
+            <text x="1045" y="244" fontSize="8" fill={FAINT}>
+              ● Real-time Telemetry &amp; Metrics Plane
             </text>
           </g>
 
           {/* ---------- VPC Boundary (Levels 2 - 6) ---------- */}
           <g opacity={level >= 2 ? 1 : 0.22}>
             <rect
-              x="180"
+              x="175"
               y="275"
-              width="820"
-              height="530"
+              width="830"
+              height="535"
               rx="16"
               fill="rgba(79,209,197,0.015)"
               stroke={TONE.teal}
               strokeOpacity="0.4"
               strokeWidth="1.5"
             />
-            <text x="200" y="297" fontSize="11" fontWeight="800" letterSpacing="1" fill={TONE.teal}>
+            <text x="195" y="297" fontSize="11" fontWeight="800" letterSpacing="1" fill={TONE.teal}>
               VPC: vpc-cafe-prod
             </text>
-            <text x="360" y="297" fontSize="9.5" fill={MUTED}>
+            <text x="355" y="297" fontSize="9.5" fill={MUTED}>
               IPv4 CIDR: 10.0.0.0/16 · DNS Hostnames: Enabled
             </text>
 
             {/* Internet Gateway Attached to VPC */}
             <rect
-              x="170"
+              x="145"
               y="360"
-              width="60"
+              width="55"
               height="50"
               rx="6"
               fill="#0d141e"
               stroke={TONE.teal}
               strokeWidth="1.3"
             />
-            <text x="200" y="382" textAnchor="middle" fontSize="9.5" fontWeight="700" fill={TONE.teal}>
+            <text x="172" y="382" textAnchor="middle" fontSize="10" fontWeight="800" fill={TONE.teal}>
               IGW
             </text>
-            <text x="200" y="398" textAnchor="middle" fontSize="8" fill={MUTED}>
+            <text x="172" y="398" textAnchor="middle" fontSize="7.5" fill={MUTED}>
               igw-cafe
             </text>
 
             {/* ---------- Availability Zone A (Left Half) ---------- */}
             <rect
-              x="200"
+              x="195"
               y="315"
-              width="385"
-              height="470"
+              width="395"
+              height="485"
               rx="12"
               fill="rgba(255,255,255,0.01)"
               stroke="#273343"
               strokeDasharray="6 5"
             />
-            <text x="215" y="333" fontSize="9.5" fontWeight="700" letterSpacing="1" fill={INK}>
+            <text x="210" y="333" fontSize="9.5" fontWeight="700" letterSpacing="1" fill={INK}>
               AVAILABILITY ZONE A (us-east-1a)
             </text>
 
             {/* ---------- Availability Zone B (Right Half) ---------- */}
             <rect
-              x="605"
+              x="600"
               y="315"
-              width="380"
-              height="470"
+              width="395"
+              height="485"
               rx="12"
               fill="rgba(255,255,255,0.01)"
               stroke="#273343"
               strokeDasharray="6 5"
               opacity={level >= 4 ? 1 : 0.3}
             />
-            <text x="620" y="333" fontSize="9.5" fontWeight="700" letterSpacing="1" fill={level >= 4 ? INK : FAINT}>
+            <text x="615" y="333" fontSize="9.5" fontWeight="700" letterSpacing="1" fill={level >= 4 ? INK : FAINT}>
               AVAILABILITY ZONE B (us-east-1b) {level < 4 ? '(Standby for L4+)' : ''}
             </text>
 
@@ -595,53 +546,55 @@ export function AwsCafeTopology({
             {/* PUBLIC SUBNETS TIER (ALB / Ingress)                                       */}
             {/* ========================================================================= */}
             <rect
-              x="215"
-              y="345"
-              width="355"
-              height="100"
+              x="205"
+              y="342"
+              width="375"
+              height="105"
               rx="9"
               fill="rgba(56,189,248,0.03)"
               stroke={TONE.sky}
               strokeOpacity="0.35"
             />
-            <text x="225" y="362" fontSize="8.5" fontWeight="700" fill={TONE.sky}>
-              PUBLIC SUBNET (AZ-a) · 10.0.1.0/24 · route 0.0.0.0/0 → igw
+            <rect x="212" y="347" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.sky} strokeOpacity="0.4" />
+            <text x="289" y="359.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.sky}>
+              PUBLIC SUBNET (AZ-a) · 10.0.1
             </text>
 
             <rect
-              x="620"
-              y="345"
-              width="350"
-              height="100"
+              x="610"
+              y="342"
+              width="375"
+              height="105"
               rx="9"
               fill="rgba(56,189,248,0.03)"
               stroke={TONE.sky}
               strokeOpacity={level >= 4 ? 0.35 : 0.15}
             />
-            <text x="630" y="362" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.sky : FAINT}>
-              PUBLIC SUBNET (AZ-b) · 10.0.2.0/24 · route 0.0.0.0/0 → igw
+            <rect x="825" y="347" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.sky} strokeOpacity={level >= 4 ? 0.4 : 0.15} />
+            <text x="902" y="359.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={level >= 4 ? TONE.sky : FAINT}>
+              PUBLIC SUBNET (AZ-b) · 10.0.2
             </text>
 
             {/* LEVEL 2 & 3: Single EC2 Web Server in Public Subnet */}
             {(level === 2 || level === 3) && (
               <g>
                 <rect
-                  x="320"
-                  y="368"
-                  width="180"
-                  height="66"
+                  x="310"
+                  y="365"
+                  width="220"
+                  height="68"
                   rx="8"
-                  fill="rgba(12,18,26,0.95)"
+                  fill="rgba(12,18,26,0.96)"
                   stroke={TONE.teal}
                   strokeWidth="1.4"
                 />
-                <text x="330" y="388" fontSize="10.5" fontWeight="700" fill={INK}>
+                <text x="325" y="386" fontSize="10.5" fontWeight="700" fill={INK}>
                   EC2: cafe-web-server
                 </text>
-                <text x="330" y="403" fontSize="9" fill={MUTED}>
+                <text x="325" y="402" fontSize="9" fill={MUTED}>
                   t3.micro · Public IP 54.210.x.x
                 </text>
-                <text x="330" y="420" fontSize="8.5" fill={level === 2 ? TONE.amber : TONE.teal}>
+                <text x="325" y="420" fontSize="8.5" fontWeight="700" fill={level === 2 ? TONE.amber : TONE.teal}>
                   {level === 2 ? 'App + Local MySQL (same host)' : 'Dynamic App (Remote RDS)'}
                 </text>
               </g>
@@ -651,23 +604,23 @@ export function AwsCafeTopology({
             {level >= 4 && (
               <g>
                 <rect
-                  x="430"
-                  y="368"
-                  width="280"
-                  height="68"
+                  x="440"
+                  y="365"
+                  width="300"
+                  height="70"
                   rx="10"
-                  fill="rgba(12,18,26,0.95)"
+                  fill="rgba(12,18,26,0.96)"
                   stroke={TONE.teal}
                   strokeWidth="1.6"
                 />
-                <text x="570" y="388" textAnchor="middle" fontSize="11" fontWeight="700" fill={INK}>
+                <text x="590" y="386" textAnchor="middle" fontSize="11" fontWeight="700" fill={INK}>
                   Application Load Balancer (ALB)
                 </text>
-                <text x="570" y="403" textAnchor="middle" fontSize="9" fill={MUTED}>
+                <text x="590" y="402" textAnchor="middle" fontSize="9" fill={MUTED}>
                   cafe-alb · internet-facing · Dual-AZ Target Group
                 </text>
-                <text x="570" y="422" textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
-                  ALB-SG: Port 80/443 from 0.0.0.0/0 → distributes 50/50
+                <text x="590" y="422" textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
+                  ALB-SG: Ingress Port 80/443 (0.0.0.0/0) · distributes 50/50
                 </text>
               </g>
             )}
@@ -676,55 +629,57 @@ export function AwsCafeTopology({
             {/* PRIVATE APPLICATION SUBNETS TIER (EC2 Auto Scaling Group)                */}
             {/* ========================================================================= */}
             <rect
-              x="215"
-              y="460"
-              width="355"
-              height="150"
+              x="205"
+              y="468"
+              width="375"
+              height="145"
               rx="9"
               fill="rgba(79,209,197,0.03)"
               stroke={TONE.teal}
               strokeOpacity="0.35"
             />
-            <text x="225" y="478" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
-              PRIVATE APP SUBNET (AZ-a) · 10.0.11.0/24 · route → nat-gw
+            <rect x="212" y="473" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.teal} strokeOpacity="0.4" />
+            <text x="289" y="485.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.teal}>
+              PRIVATE APP (AZ-a) · 10.0.11
             </text>
 
             <rect
-              x="620"
-              y="460"
-              width="350"
-              height="150"
+              x="610"
+              y="468"
+              width="375"
+              height="145"
               rx="9"
               fill="rgba(79,209,197,0.03)"
               stroke={TONE.teal}
               strokeOpacity={level >= 4 ? 0.35 : 0.15}
             />
-            <text x="630" y="478" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.teal : FAINT}>
-              PRIVATE APP SUBNET (AZ-b) · 10.0.12.0/24 · route → nat-gw
+            <rect x="616" y="473" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.teal} strokeOpacity={level >= 4 ? 0.4 : 0.15} />
+            <text x="693" y="485.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={level >= 4 ? TONE.teal : FAINT}>
+              PRIVATE APP (AZ-b) · 10.0.12
             </text>
 
             {/* EC2 Instance in AZ-a */}
             <g opacity={level >= 4 ? 1 : 0.3}>
               <rect
-                x="250"
-                y="500"
-                width="230"
-                height="95"
+                x="245"
+                y="498"
+                width="295"
+                height="98"
                 rx="9"
-                fill="rgba(12,18,26,0.95)"
+                fill="rgba(12,18,26,0.96)"
                 stroke={TONE.teal}
                 strokeWidth={level >= 4 ? 1.4 : 1}
               />
-              <text x="265" y="522" fontSize="10.5" fontWeight="700" fill={INK}>
+              <text x="260" y="520" fontSize="10.5" fontWeight="700" fill={INK}>
                 cafe-web-1a (ASG instance)
               </text>
-              <text x="265" y="538" fontSize="9" fill={MUTED}>
+              <text x="260" y="538" fontSize="9" fill={MUTED}>
                 t3.micro · Private IP 10.0.11.24
               </text>
-              <text x="265" y="555" fontSize="8.5" fill={FAINT}>
+              <text x="260" y="556" fontSize="8.5" fill={FAINT}>
                 HTTP :8080 · Health: 200 OK
               </text>
-              <text x="265" y="578" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
+              <text x="260" y="579" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
                 EC2-SG: allows :8080 from ALB-SG only
               </text>
             </g>
@@ -733,24 +688,24 @@ export function AwsCafeTopology({
             <g opacity={level >= 4 ? 1 : 0.3}>
               <rect
                 x="650"
-                y="500"
-                width="230"
-                height="95"
+                y="498"
+                width="295"
+                height="98"
                 rx="9"
-                fill="rgba(12,18,26,0.95)"
+                fill="rgba(12,18,26,0.96)"
                 stroke={TONE.teal}
                 strokeWidth={level >= 4 ? 1.4 : 1}
               />
-              <text x="665" y="522" fontSize="10.5" fontWeight="700" fill={level >= 4 ? INK : FAINT}>
+              <text x="665" y="520" fontSize="10.5" fontWeight="700" fill={level >= 4 ? INK : FAINT}>
                 cafe-web-1b (ASG instance)
               </text>
               <text x="665" y="538" fontSize="9" fill={MUTED}>
                 t3.micro · Private IP 10.0.12.38
               </text>
-              <text x="665" y="555" fontSize="8.5" fill={FAINT}>
+              <text x="665" y="556" fontSize="8.5" fill={FAINT}>
                 HTTP :8080 · Health: 200 OK
               </text>
-              <text x="665" y="578" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.teal : FAINT}>
+              <text x="665" y="579" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.teal : FAINT}>
                 EC2-SG: allows :8080 from ALB-SG only
               </text>
             </g>
@@ -759,82 +714,94 @@ export function AwsCafeTopology({
             {/* PRIVATE DATABASE SUBNETS TIER (RDS Multi-AZ)                              */}
             {/* ========================================================================= */}
             <rect
-              x="215"
-              y="625"
-              width="355"
-              height="145"
+              x="205"
+              y="635"
+              width="375"
+              height="150"
               rx="9"
               fill="rgba(232,163,61,0.03)"
               stroke={TONE.amber}
               strokeOpacity="0.4"
             />
-            <text x="225" y="643" fontSize="8.5" fontWeight="700" fill={TONE.amber}>
-              PRIVATE DB SUBNET (AZ-a) · 10.0.21.0/24 · ISOLATED (NO INTERNET ROUTE)
+            <rect x="212" y="640" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.amber} strokeOpacity="0.5" />
+            <text x="289" y="652.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.amber}>
+              PRIVATE DB (AZ-a) · ISOLATED
             </text>
 
             <rect
-              x="620"
-              y="625"
-              width="350"
-              height="145"
+              x="610"
+              y="635"
+              width="375"
+              height="150"
               rx="9"
               fill="rgba(232,163,61,0.03)"
               stroke={TONE.amber}
               strokeOpacity={level >= 4 ? 0.4 : 0.15}
             />
-            <text x="630" y="643" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.amber : FAINT}>
-              PRIVATE DB SUBNET (AZ-b) · 10.0.22.0/24 · ISOLATED (NO INTERNET ROUTE)
+            <rect x="616" y="640" width="155" height="18" rx="4" fill="#0d141e" stroke={TONE.amber} strokeOpacity={level >= 4 ? 0.5 : 0.2} />
+            <text x="693" y="652.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={level >= 4 ? TONE.amber : FAINT}>
+              PRIVATE DB (AZ-b) · ISOLATED
             </text>
 
             {/* RDS Primary Instance (AZ-a) */}
             <g opacity={hasRds ? 1 : 0.28}>
               <rect
-                x="250"
-                y="655"
-                width="230"
-                height="100"
+                x="245"
+                y="663"
+                width="295"
+                height="105"
                 rx="9"
-                fill="rgba(12,18,26,0.95)"
+                fill="rgba(12,18,26,0.96)"
                 stroke={TONE.amber}
                 strokeWidth={hasRds ? 1.5 : 1}
               />
-              <text x="265" y="677" fontSize="10.5" fontWeight="700" fill={INK}>
+              <text x="260" y="685" fontSize="10.5" fontWeight="700" fill={INK}>
                 Amazon RDS: Primary
               </text>
-              <text x="265" y="693" fontSize="9" fill={MUTED}>
+              <text x="260" y="703" fontSize="9" fill={MUTED}>
                 MySQL 8.0 · db.t3.micro · 10.0.21.50
               </text>
-              <text x="265" y="710" fontSize="8.5" fill={TONE.amber}>
+              <text x="260" y="722" fontSize="8.5" fill={TONE.amber}>
                 Port 3306 · Automated Daily Backups
               </text>
-              <text x="265" y="735" fontSize="8" fontWeight="700" fill={TONE.amber}>
-                RDS-SG: allows :3306 from EC2-SG &amp; L1 ONLY
+              <text x="260" y="747" fontSize="8" fontWeight="700" fill={TONE.amber}>
+                RDS-SG: allows :3306 from EC2-SG &amp; Lambda 1 only
               </text>
             </g>
+
+            {/* Clean Centered Multi-AZ Sync Badge (Between Primary & Standby in open gap) */}
+            {level >= 4 && (
+              <g transform="translate(562, 705)">
+                <rect width="66" height="20" rx="10" fill="#0d141e" stroke={TONE.amber} strokeWidth="1" />
+                <text x="33" y="13.5" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.amber}>
+                  Multi-AZ Sync
+                </text>
+              </g>
+            )}
 
             {/* RDS Standby Replica (AZ-b) */}
             <g opacity={level >= 4 ? 1 : 0.25}>
               <rect
                 x="650"
-                y="655"
-                width="230"
-                height="100"
+                y="663"
+                width="295"
+                height="105"
                 rx="9"
-                fill="rgba(12,18,26,0.95)"
+                fill="rgba(12,18,26,0.96)"
                 stroke={TONE.amber}
                 strokeWidth={level >= 4 ? 1.4 : 1}
                 strokeDasharray={level >= 4 ? undefined : '5 5'}
               />
-              <text x="665" y="677" fontSize="10.5" fontWeight="700" fill={level >= 4 ? INK : FAINT}>
+              <text x="665" y="685" fontSize="10.5" fontWeight="700" fill={level >= 4 ? INK : FAINT}>
                 Amazon RDS: Standby
               </text>
-              <text x="665" y="693" fontSize="9" fill={MUTED}>
+              <text x="665" y="703" fontSize="9" fill={MUTED}>
                 Multi-AZ Synchronous Replica · 10.0.22.90
               </text>
-              <text x="665" y="710" fontSize="8.5" fill={level >= 4 ? TONE.amber : FAINT}>
-                Synchronous Block Replication
+              <text x="665" y="722" fontSize="8.5" fill={level >= 4 ? TONE.amber : FAINT}>
+                Synchronous Physical Block Replication
               </text>
-              <text x="665" y="735" fontSize="8" fontWeight="700" fill={level >= 4 ? TONE.amber : FAINT}>
+              <text x="665" y="747" fontSize="8" fontWeight="700" fill={level >= 4 ? TONE.amber : FAINT}>
                 Automatic Failover Target in &lt; 60s
               </text>
             </g>
@@ -847,8 +814,8 @@ export function AwsCafeTopology({
             <rect
               x="1030"
               y="275"
-              width="200"
-              height="530"
+              width="210"
+              height="535"
               rx="16"
               fill="rgba(167,139,250,0.02)"
               stroke={TONE.violet}
@@ -866,10 +833,10 @@ export function AwsCafeTopology({
             <rect
               x="1045"
               y="325"
-              width="170"
+              width="180"
               height="50"
               rx="8"
-              fill="rgba(12,18,26,0.95)"
+              fill="rgba(12,18,26,0.96)"
               stroke={TONE.violet}
               strokeWidth="1.2"
             />
@@ -877,40 +844,40 @@ export function AwsCafeTopology({
               Amazon EventBridge
             </text>
             <text x="1055" y="362" fontSize="8" fill={MUTED}>
-              cron(0 2 * * ? *) · daily trigger
+              cron(0 2 * * ? *) · Daily Schedule
             </text>
 
             {/* Lambda 1: DB Reader (inside VPC) */}
             <rect
               x="1045"
               y="405"
-              width="170"
+              width="180"
               height="80"
               rx="8"
-              fill="rgba(12,18,26,0.95)"
+              fill="rgba(12,18,26,0.96)"
               stroke={TONE.violet}
               strokeWidth="1.4"
             />
             <text x="1055" y="425" fontSize="10" fontWeight="700" fill={INK}>
-              Lambda 1: DB Reader
+              Lambda 1: Sales DB Reader
             </text>
-            <text x="1055" y="440" fontSize="8.5" fill={TONE.violet}>
+            <text x="1055" y="441" fontSize="8.5" fill={TONE.violet}>
               VPC Subnet · Reads RDS
             </text>
-            <text x="1055" y="456" fontSize="8" fill={MUTED}>
+            <text x="1055" y="457" fontSize="8" fill={MUTED}>
               Uses Secrets Manager auth
             </text>
-            <text x="1055" y="474" fontSize="8" fontWeight="700" fill={TONE.teal}>
+            <text x="1055" y="475" fontSize="8" fontWeight="700" fill={TONE.teal}>
               Outputs: Sanitized JSON only
             </text>
 
             {/* LEAST PRIVILEGE BARRIER BADGE */}
-            <g transform="translate(1040, 500)">
-              <rect width="180" height="32" rx="6" fill="#140f22" stroke={TONE.violet} strokeDasharray="3 3" />
-              <text x="90" y="14" textAnchor="middle" fontSize="7.5" fontWeight="800" fill={TONE.violet}>
+            <g transform="translate(1045, 505)">
+              <rect width="180" height="35" rx="6" fill="#140f22" stroke={TONE.violet} strokeDasharray="3 3" />
+              <text x="90" y="15" textAnchor="middle" fontSize="8" fontWeight="800" fill={TONE.violet}>
                 ⚡ LEAST PRIVILEGE BARRIER
               </text>
-              <text x="90" y="25" textAnchor="middle" fontSize="7" fill={MUTED}>
+              <text x="90" y="27" textAnchor="middle" fontSize="7.5" fill={MUTED}>
                 Lambda 2 has NO DB access or credentials
               </text>
             </g>
@@ -918,59 +885,59 @@ export function AwsCafeTopology({
             {/* Lambda 2: Email Formatter & SNS Publisher (OUTSIDE VPC) */}
             <rect
               x="1045"
-              y="545"
-              width="170"
+              y="560"
+              width="180"
               height="70"
               rx="8"
-              fill="rgba(12,18,26,0.95)"
+              fill="rgba(12,18,26,0.96)"
               stroke={TONE.violet}
               strokeWidth="1.4"
             />
-            <text x="1055" y="565" fontSize="10" fontWeight="700" fill={INK}>
-              Lambda 2: SNS Dispatcher
+            <text x="1055" y="580" fontSize="10" fontWeight="700" fill={INK}>
+              Lambda 2: Dispatcher
             </text>
-            <text x="1055" y="580" fontSize="8.5" fill={TONE.violet}>
-              Outside VPC · NO DB Rights
+            <text x="1055" y="596" fontSize="8.5" fill={TONE.violet}>
+              Outside VPC · Zero DB Rights
             </text>
-            <text x="1055" y="596" fontSize="8" fill={MUTED}>
+            <text x="1055" y="613" fontSize="8" fill={MUTED}>
               Role: sns:Publish permission only
             </text>
 
             {/* Amazon SNS Topic */}
             <rect
               x="1045"
-              y="635"
-              width="170"
+              y="650"
+              width="180"
               height="60"
               rx="8"
-              fill="rgba(12,18,26,0.95)"
+              fill="rgba(12,18,26,0.96)"
               stroke={TONE.violet}
               strokeWidth="1.2"
             />
-            <text x="1055" y="655" fontSize="10" fontWeight="700" fill={INK}>
+            <text x="1055" y="670" fontSize="10" fontWeight="700" fill={INK}>
               Amazon SNS Topic
             </text>
-            <text x="1055" y="670" fontSize="8.5" fill={MUTED}>
+            <text x="1055" y="686" fontSize="8.5" fill={MUTED}>
               cafe-daily-reports-topic
             </text>
-            <text x="1055" y="685" fontSize="8" fill={TONE.violet}>
+            <text x="1055" y="700" fontSize="8" fill={TONE.violet}>
               Fanout: Email &amp; SMS
             </text>
 
             {/* Subscribers */}
             <rect
               x="1045"
-              y="715"
-              width="170"
+              y="730"
+              width="180"
               height="45"
               rx="8"
-              fill="rgba(12,18,26,0.95)"
+              fill="rgba(12,18,26,0.96)"
               stroke="#2e3848"
             />
-            <text x="1055" y="733" fontSize="9.5" fontWeight="700" fill={INK}>
+            <text x="1055" y="748" fontSize="9.5" fontWeight="700" fill={INK}>
               Stakeholders &amp; Owner
             </text>
-            <text x="1055" y="748" fontSize="8" fill={MUTED}>
+            <text x="1055" y="763" fontSize="8" fill={MUTED}>
               Daily revenue digest in inbox
             </text>
           </g>
@@ -981,20 +948,6 @@ export function AwsCafeTopology({
           {flows.map((f, i) => (
             <FlowLine key={f.id} flow={f} index={i} />
           ))}
-
-          {/* ========================================================================= */}
-          {/* INLINE LABELS & PROTOCOL PILLS                                            */}
-          {/* ========================================================================= */}
-          {level === 1 && <Pill x={180} y={230} text="HTTP GET /" tone="teal" />}
-          {level >= 2 && <Pill x={165} y={375} text="HTTPS :443" tone="teal" />}
-          {level >= 4 && <Pill x={570} y={355} text="ALB-SG :443" tone="teal" />}
-          {level >= 4 && <Pill x={365} y={490} text="target :8080" tone="teal" />}
-          {level >= 4 && <Pill x={735} y={490} text="target :8080" tone="teal" />}
-          {hasRds && <Pill x={365} y={620} text="TCP :3306" tone="amber" />}
-          {level >= 4 && <Pill x={550} y={690} text="Multi-AZ Sync" tone="amber" />}
-          {level >= 5 && <Pill x={1150} y={400} text="trigger" tone="violet" />}
-          {level >= 5 && <Pill x={1150} y={520} text="payload only" tone="violet" />}
-          {level >= 5 && <Pill x={1150} y={628} text="publish" tone="violet" />}
         </svg>
       </div>
 
@@ -1029,3 +982,5 @@ export function AwsCafeTopology({
     </div>
   )
 }
+
+export default AwsCafeTopology
