@@ -233,9 +233,9 @@ export function AwsCafeTopology({
                 type="button"
                 className="button step-btn primary"
                 onClick={onRunReport}
-                title="Execute daily sales reporting pipeline"
+                title="DevOps Pipeline Test: Execute on-demand test event & inspect serverless trace"
               >
-                ▶ Run Report ({reportRuns})
+                🧪 Test Pipeline & Trace ({reportRuns})
               </button>
             )}
             <button
@@ -980,6 +980,31 @@ export function AwsCafeTopology({
             <text x="1055" y="763" fontSize="8" fill={MUTED}>
               Daily revenue digest in inbox
             </text>
+
+            {/* Clickable Test Trigger Badge inside SVG */}
+            {level >= 5 && (
+              <g
+                style={{ cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (onRunReport) onRunReport()
+                }}
+              >
+                <rect
+                  x="1045"
+                  y="780"
+                  width="180"
+                  height="22"
+                  rx="6"
+                  fill="rgba(167,139,250,0.18)"
+                  stroke={TONE.violet}
+                  strokeWidth="1"
+                />
+                <text x="1135" y="794" textAnchor="middle" fontSize="8" fontWeight="700" fill={TONE.violet}>
+                  🧪 Click to Test Pipeline & Trace
+                </text>
+              </g>
+            )}
           </g>
 
           {/* ========================================================================= */}

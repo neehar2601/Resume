@@ -1,5 +1,6 @@
 import { NavBrand } from './NavBrand'
 import { AwsCafeTopology } from './sandbox/AwsCafeTopology'
+import { ServerlessTraceModal } from './sandbox/ServerlessTraceModal'
 import { useEffect, useMemo, useState } from 'react'
 
 type ArchitectureLevel = 1 | 2 | 3 | 4 | 5 | 6
@@ -112,6 +113,7 @@ export function CafeWebsiteSandbox() {
   const [lastReport, setLastReport] = useState('not run')
   const [question, setQuestion] = useState('why')
   const [securityFocus, setSecurityFocus] = useState<'overview' | 'alb' | 'ec2' | 'rds' | 'lambda'>('overview')
+  const [isTraceOpen, setIsTraceOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'topology' | 'simplified'>('topology')
 
   const current = decisions[level - 1]
@@ -153,6 +155,7 @@ export function CafeWebsiteSandbox() {
     if (!hasReporting) return
     setReportRuns((count) => count + 1)
     setLastReport('just now')
+    setIsTraceOpen(true)
   }
 
   return (
@@ -199,67 +202,138 @@ export function CafeWebsiteSandbox() {
               </div>
             </div>
 
-            <div style={{ marginTop: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div>
-                  <span className="control-label" style={{ display: 'block', fontSize: '10px', color: 'var(--teal)', letterSpacing: '0.1em' }}>ARCHITECTURE TOPOLOGY VIEW</span>
-                  <strong style={{ fontSize: '1.1rem', color: 'var(--text)' }}>
-                    {viewMode === 'topology' ? 'AWS High-Fidelity Topology Diagram (VPC / Multi-AZ / Subnets / SGs)' : 'Simplified High-Level Flow'}
-                  </strong>
+            {/* Sticky Architecture View Switcher Bar (Always Visible) */}
+            <div className="view-switcher-sticky-bar">
+              <div className="view-switcher-title">
+                <span className="control-label">ARCHITECTURE VIEW MODE</span>
+                <strong>
+                  {viewMode === 'topology'
+                    ? 'Full High-Fidelity Topology (VPC, Multi-AZ Subnets, ALB, ASG, RDS, Serverless)'
+                    : 'Simplified High-Level Request Flow (Component-to-Component Baseline)'}
+                </strong>
+              </div>
+              <div className="view-switcher-buttons">
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'topology' ? 'active' : ''}`}
+                  onClick={() => setViewMode('topology')}
+                  title="Switch to full Multi-AZ AWS infrastructure topology"
+                >
+                  🗺 Full Topology Diagram
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'simplified' ? 'active' : ''}`}
+                  onClick={() => setViewMode('simplified')}
+                  title="Switch to simplified component flow"
+                >
+                  ⚡ Simplified Flow
+                </button>
+              </div>
+            </div>
+
+            {/* Active View Container */}
+            {viewMode === 'topology' ? (
+              <AwsCafeTopology
+                level={level}
+                instanceCount={instanceCount}
+                traffic={traffic}
+                hasAlb={hasAlb}
+                hasRds={hasRds}
+                hasReporting={hasReporting}
+                onSelectLevel={evolveTo}
+                onTrafficBurst={runTrafficBurst}
+                onResetTraffic={resetTraffic}
+                onRunReport={runLambdaReport}
+                reportRuns={reportRuns}
+              />
+            ) : (
+              <div className="cafe-architecture-card">
+                <div className="cafe-arch-heading">
+                  <div>
+                    <span className="control-label">reference architecture at current stage</span>
+                    <strong>{level < 6 ? 'single-region production shape' : 'repeatable infrastructure / regional deployment'}</strong>
+                  </div>
+                  <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className={`button ${viewMode === 'topology' ? 'primary' : ''}`}
-                    onClick={() => setViewMode('topology')}
-                    style={{ fontSize: '11px', padding: '6px 12px' }}
-                  >
-                    🗺 Full Topology Diagram
-                  </button>
-                  <button
-                    type="button"
-                    className={`button ${viewMode === 'simplified' ? 'primary' : ''}`}
-                    onClick={() => setViewMode('simplified')}
-                    style={{ fontSize: '11px', padding: '6px 12px' }}
-                  >
-                    ⚡ Simplified Flow
-                  </button>
+
+                {/* Stage Evolution & Simulation Buttons under Simplified View */}
+                <div className="simplified-controls-bar">
+                  <div className="simplified-stage-row">
+                    <span className="control-label">ARCHITECTURE STAGE:</span>
+                    <div className="button-group step-group">
+                      {([1, 2, 3, 4, 5, 6] as ArchitectureLevel[]).map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          className={`button step-btn ${level === lvl ? 'primary' : ''}`}
+                          onClick={() => evolveTo(lvl)}
+                        >
+                          {lvl === 1 && '01 · S3'}
+                          {lvl === 2 && '02 · EC2'}
+                          {lvl === 3 && '03 · RDS'}
+                          {lvl === 4 && '04 · ALB+ASG'}
+                          {lvl === 5 && '05 · Serverless'}
+                          {lvl === 6 && '06 · CloudFormation'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="simplified-actions-row">
+                    <button
+                      type="button"
+                      className="button step-btn"
+                      onClick={runTrafficBurst}
+                      title="Simulate sudden traffic spike (+18 load)"
+                    >
+                      ⚡ Burst Traffic
+                    </button>
+                    {hasReporting && (
+                      <button
+                        type="button"
+                        className="button step-btn primary"
+                        onClick={runLambdaReport}
+                        title="DevOps Pipeline Test: Execute on-demand test event & inspect serverless trace"
+                      >
+                        🧪 Test Pipeline &amp; Trace ({reportRuns})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button step-btn"
+                      onClick={resetTraffic}
+                      title="Reset traffic to baseline (38 load)"
+                    >
+                      ↺ Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* Active Level Stage Explainer Badge */}
+                <div className="simplified-explainer-banner">
+                  <span className="stage-step-pill">{current.short}</span>
+                  <strong>{current.title}</strong>
+                  <p>{current.problem} ➔ {current.solved}</p>
+                </div>
+
+                {level < 6 ? (
+                  <CurrentArchitecture
+                    level={level}
+                    instanceCount={instanceCount}
+                    hasAlb={hasAlb}
+                    hasRds={hasRds}
+                    hasReporting={hasReporting}
+                  />
+                ) : (
+                  <InfrastructureAsCodeArchitecture />
+                )}
+
+                <div className="architecture-note">
+                  <span>Design principle</span>
+                  <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
                 </div>
               </div>
-
-              {viewMode === 'topology' ? (
-                <AwsCafeTopology
-                  level={level}
-                  instanceCount={instanceCount}
-                  traffic={traffic}
-                  hasAlb={hasAlb}
-                  hasRds={hasRds}
-                  hasReporting={hasReporting}
-                  onSelectLevel={evolveTo}
-                  onTrafficBurst={runTrafficBurst}
-                  onResetTraffic={resetTraffic}
-                  onRunReport={runLambdaReport}
-                  reportRuns={reportRuns}
-                />
-              ) : (
-                <div className="cafe-architecture-card">
-                  <div className="cafe-arch-heading">
-                    <div>
-                      <span className="control-label">reference architecture at current stage</span>
-                      <strong>{level < 6 ? 'single-region production shape' : 'repeatable infrastructure / regional deployment'}</strong>
-                    </div>
-                    <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
-                  </div>
-
-                  {level < 6 ? <CurrentArchitecture level={level} instanceCount={instanceCount} hasAlb={hasAlb} hasRds={hasRds} hasReporting={hasReporting} /> : <InfrastructureAsCodeArchitecture />}
-
-                  <div className="architecture-note">
-                    <span>Design principle</span>
-                    <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="cafe-control-grid">
               <div className="cafe-control-card">
@@ -427,38 +501,13 @@ export function CafeWebsiteSandbox() {
         </section>
 
         <section className="section sandbox-section">
-          <div className="container sandbox-two-col">
-            <div>
-              <div className="sandbox-section-heading"><span>03 / workload simulation</span><h2>Watch the architecture react.</h2></div>
-              <div className="cafe-ops-grid single-column">
-                <div className="ops-card">
-                  <div className="ops-heading"><span>capacity</span><b>{hasAlb ? 'ALB + ASG modeled' : 'single host modeled'}</b></div>
-                  <div className="watch-lines">
-                    <div><span>EC2 web nodes</span><strong>{instanceCount}</strong></div>
-                    <div><span>EC2 CPU</span><strong>{metrics.cpu.toFixed(0)}%</strong></div>
-                    <div><span>request latency</span><strong>{metrics.latency}ms</strong></div>
-                    <div><span>RDS connections</span><strong>{hasRds ? metrics.dbConnections : '—'}</strong></div>
-                  </div>
-                </div>
-                <div className="ops-card">
-                  <div className="ops-heading"><span>daily reporting</span><b>{hasReporting ? 'active design' : 'available in stage 05'}</b></div>
-                  <p>Manually exporting reports is replaced by scheduled extraction, processing and email delivery.</p>
-                  <div className="ops-stat"><span>last report</span><strong>{lastReport}</strong></div>
-                  <div className="ops-stat"><span>simulated invocations</span><strong>{reportRuns}</strong></div>
-                  <div className="ops-stat"><span>delivery mode</span><strong>{hasReporting ? 'Lambda 1 → Lambda 2' : '—'}</strong></div>
-                  <div className="ops-stat"><span>optional SQS hardening</span><strong>{hasReporting ? 'not required' : '—'}</strong></div>
-                  <button className="button primary" type="button" onClick={runLambdaReport} disabled={!hasReporting}>{hasReporting ? '▶ run report flow' : 'advance to reporting stage'}</button>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="sandbox-section-heading"><span>04 / observability</span><h2>CloudWatch stays alongside the architecture.</h2></div>
-              <div className="experiment-card">
-                <div className="experiment-step"><b>ALB</b><div><strong>Request + target health</strong><p>{hasAlb ? `${metrics.requests} req/min modeled across healthy web targets.` : 'Not introduced until the load-balanced stage.'}</p></div></div>
-                <div className="experiment-step"><b>EC2</b><div><strong>CPU + capacity pressure</strong><p>{metrics.cpu.toFixed(0)}% modeled CPU with {instanceCount} web node{instanceCount === 1 ? '' : 's'}.</p></div></div>
-                <div className="experiment-step"><b>RDS</b><div><strong>Connection pressure</strong><p>{hasRds ? `${metrics.dbConnections} modeled connections in the private database tier.` : 'Database is not yet managed by RDS at this stage.'}</p></div></div>
-                <div className="experiment-step"><b>λ</b><div><strong>Serverless workflow</strong><p>{hasReporting ? `${reportRuns} simulated report run${reportRuns === 1 ? '' : 's'}; direct function invocation in the baseline path.` : 'Reporting becomes serverless in stage 05.'}</p></div></div>
-              </div>
+          <div className="container">
+            <div className="sandbox-section-heading"><span>03 / observability</span><h2>CloudWatch stays alongside the architecture.</h2></div>
+            <div className="experiment-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+              <div className="experiment-step"><b>ALB</b><div><strong>Request + target health</strong><p>{hasAlb ? `${metrics.requests} req/min modeled across healthy web targets.` : 'Not introduced until the load-balanced stage.'}</p></div></div>
+              <div className="experiment-step"><b>EC2</b><div><strong>CPU + capacity pressure</strong><p>{metrics.cpu.toFixed(0)}% modeled CPU with {instanceCount} web node{instanceCount === 1 ? '' : 's'}.</p></div></div>
+              <div className="experiment-step"><b>RDS</b><div><strong>Connection pressure</strong><p>{hasRds ? `${metrics.dbConnections} modeled connections in the private database tier.` : 'Database is not yet managed by RDS at this stage.'}</p></div></div>
+              <div className="experiment-step"><b>λ</b><div><strong>Serverless workflow</strong><p>{hasReporting ? `${reportRuns} simulated report run${reportRuns === 1 ? '' : 's'}; direct function invocation in the baseline path.` : 'Reporting becomes serverless in stage 05.'}</p></div></div>
             </div>
           </div>
         </section>
@@ -466,7 +515,7 @@ export function CafeWebsiteSandbox() {
         <section className="section sandbox-section">
           <div className="container sandbox-two-col">
             <div>
-              <div className="sandbox-section-heading"><span>05 / configuration</span><h2>Inspect the design as code.</h2></div>
+              <div className="sandbox-section-heading"><span>04 / configuration</span><h2>Inspect the design as code.</h2></div>
               <div className="config-tabs">
                 {Object.entries({ s3: 'S3', ec2: 'EC2', rds: 'RDS', ha: 'ALB + ASG', security: 'VPC + Security Groups', reporting: '2× Lambda', iac: 'CloudFormation / IaC' }).map(([id, label]) => (
                   <button key={id} className={activeConfig === id ? 'active' : ''} type="button" onClick={() => setActiveConfig(id)}>{label}</button>
@@ -475,7 +524,7 @@ export function CafeWebsiteSandbox() {
               <pre className="config-code"><code>{configSnippets[activeConfig]}</code></pre>
             </div>
             <div>
-              <div className="sandbox-section-heading"><span>06 / architecture interview</span><h2>Questions this project should answer.</h2></div>
+              <div className="sandbox-section-heading"><span>05 / architecture interview</span><h2>Questions this project should answer.</h2></div>
               <div className="question-list">
                 <Question text="Why S3 instead of EC2 at the beginning?" />
                 <Question text="Why is the database private?" />
@@ -496,6 +545,12 @@ export function CafeWebsiteSandbox() {
             <span>This is a browser simulation. It does not create or connect to live AWS resources, billing accounts or customer traffic. The CloudFormation step is presented as a future repeatable-infrastructure evolution. CloudFormation reproduces infrastructure definitions; it does not replicate application data across Regions.</span>
           </div>
         </section>
+        <ServerlessTraceModal
+          isOpen={isTraceOpen}
+          onClose={() => setIsTraceOpen(false)}
+          onReRun={runLambdaReport}
+          runNumber={reportRuns}
+        />
       </main>
     </div>
   )
