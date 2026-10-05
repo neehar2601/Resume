@@ -114,6 +114,7 @@ export function CafeWebsiteSandbox() {
   const [question, setQuestion] = useState('why')
   const [securityFocus, setSecurityFocus] = useState<'overview' | 'alb' | 'ec2' | 'rds' | 'lambda'>('overview')
   const [isTraceOpen, setIsTraceOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'topology' | 'simplified'>('topology')
 
   const current = decisions[level - 1]
   const hasAlb = level >= 4
@@ -201,17 +202,38 @@ export function CafeWebsiteSandbox() {
               </div>
             </div>
 
-            {/* SECTION A: High-Fidelity Full Topology Canvas */}
-            <div style={{ marginTop: '2rem' }}>
-              <div style={{ marginBottom: '0.75rem' }}>
-                <span className="control-label" style={{ display: 'block', fontSize: '10px', color: 'var(--teal)', letterSpacing: '0.1em' }}>
-                  SECTION A · FULL INFRASTRUCTURE TOPOLOGY
-                </span>
-                <strong style={{ fontSize: '1.15rem', color: 'var(--text)' }}>
-                  AWS Virtual Private Cloud (VPC), Multi-AZ Subnets, ALB, ASG &amp; RDS Multi-AZ
+            {/* Sticky Architecture View Switcher Bar (Always Visible) */}
+            <div className="view-switcher-sticky-bar">
+              <div className="view-switcher-title">
+                <span className="control-label">ARCHITECTURE VIEW MODE</span>
+                <strong>
+                  {viewMode === 'topology'
+                    ? 'Full High-Fidelity Topology (VPC, Multi-AZ Subnets, ALB, ASG, RDS, Serverless)'
+                    : 'Simplified High-Level Request Flow (Component-to-Component Baseline)'}
                 </strong>
               </div>
+              <div className="view-switcher-buttons">
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'topology' ? 'active' : ''}`}
+                  onClick={() => setViewMode('topology')}
+                  title="Switch to full Multi-AZ AWS infrastructure topology"
+                >
+                  🗺 Full Topology Diagram
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn ${viewMode === 'simplified' ? 'active' : ''}`}
+                  onClick={() => setViewMode('simplified')}
+                  title="Switch to simplified component flow"
+                >
+                  ⚡ Simplified Flow
+                </button>
+              </div>
+            </div>
 
+            {/* Active View Container */}
+            {viewMode === 'topology' ? (
               <AwsCafeTopology
                 level={level}
                 instanceCount={instanceCount}
@@ -225,35 +247,34 @@ export function CafeWebsiteSandbox() {
                 onRunReport={runLambdaReport}
                 reportRuns={reportRuns}
               />
-            </div>
-
-            {/* SECTION B: Simplified High-Level Flow */}
-            <div className="cafe-architecture-card" style={{ marginTop: '2rem' }}>
-              <div className="cafe-arch-heading">
-                <div>
-                  <span className="control-label" style={{ color: 'var(--amber)' }}>SECTION B · SIMPLIFIED HIGH-LEVEL FLOW</span>
-                  <strong>{level < 6 ? 'Core Request & Service Path' : 'repeatable infrastructure / regional deployment'}</strong>
+            ) : (
+              <div className="cafe-architecture-card">
+                <div className="cafe-arch-heading">
+                  <div>
+                    <span className="control-label">reference architecture at current stage</span>
+                    <strong>{level < 6 ? 'single-region production shape' : 'repeatable infrastructure / regional deployment'}</strong>
+                  </div>
+                  <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
                 </div>
-                <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
-              </div>
 
-              {level < 6 ? (
-                <CurrentArchitecture
-                  level={level}
-                  instanceCount={instanceCount}
-                  hasAlb={hasAlb}
-                  hasRds={hasRds}
-                  hasReporting={hasReporting}
-                />
-              ) : (
-                <InfrastructureAsCodeArchitecture />
-              )}
+                {level < 6 ? (
+                  <CurrentArchitecture
+                    level={level}
+                    instanceCount={instanceCount}
+                    hasAlb={hasAlb}
+                    hasRds={hasRds}
+                    hasReporting={hasReporting}
+                  />
+                ) : (
+                  <InfrastructureAsCodeArchitecture />
+                )}
 
-              <div className="architecture-note">
-                <span>Design principle</span>
-                <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
+                <div className="architecture-note">
+                  <span>Design principle</span>
+                  <p>CloudWatch stays beside the architecture as an operational plane rather than becoming a step in the request path. Infrastructure-as-code is treated as an overlay across every stage.</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="cafe-control-grid">
               <div className="cafe-control-card">
