@@ -1,5 +1,6 @@
 import { NavBrand } from './NavBrand'
 import { AwsCafeTopology } from './sandbox/AwsCafeTopology'
+import { ServerlessTraceModal } from './sandbox/ServerlessTraceModal'
 import { useEffect, useMemo, useState } from 'react'
 
 type ArchitectureLevel = 1 | 2 | 3 | 4 | 5 | 6
@@ -112,6 +113,7 @@ export function CafeWebsiteSandbox() {
   const [lastReport, setLastReport] = useState('not run')
   const [question, setQuestion] = useState('why')
   const [securityFocus, setSecurityFocus] = useState<'overview' | 'alb' | 'ec2' | 'rds' | 'lambda'>('overview')
+  const [isTraceOpen, setIsTraceOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'topology' | 'simplified'>('topology')
 
   const current = decisions[level - 1]
@@ -153,6 +155,7 @@ export function CafeWebsiteSandbox() {
     if (!hasReporting) return
     setReportRuns((count) => count + 1)
     setLastReport('just now')
+    setIsTraceOpen(true)
   }
 
   return (
@@ -447,7 +450,7 @@ export function CafeWebsiteSandbox() {
                   <div className="ops-stat"><span>simulated invocations</span><strong>{reportRuns}</strong></div>
                   <div className="ops-stat"><span>delivery mode</span><strong>{hasReporting ? 'Lambda 1 → Lambda 2' : '—'}</strong></div>
                   <div className="ops-stat"><span>optional SQS hardening</span><strong>{hasReporting ? 'not required' : '—'}</strong></div>
-                  <button className="button primary" type="button" onClick={runLambdaReport} disabled={!hasReporting}>{hasReporting ? '▶ run report flow' : 'advance to reporting stage'}</button>
+                  <button className="button primary" type="button" onClick={runLambdaReport} disabled={!hasReporting}>{hasReporting ? '🧪 Test Pipeline & Inspect Trace' : 'advance to reporting stage'}</button>
                 </div>
               </div>
             </div>
@@ -496,6 +499,12 @@ export function CafeWebsiteSandbox() {
             <span>This is a browser simulation. It does not create or connect to live AWS resources, billing accounts or customer traffic. The CloudFormation step is presented as a future repeatable-infrastructure evolution. CloudFormation reproduces infrastructure definitions; it does not replicate application data across Regions.</span>
           </div>
         </section>
+        <ServerlessTraceModal
+          isOpen={isTraceOpen}
+          onClose={() => setIsTraceOpen(false)}
+          onReRun={runLambdaReport}
+          runNumber={reportRuns}
+        />
       </main>
     </div>
   )
