@@ -575,26 +575,37 @@ export function AwsCafeTopology({
               PUBLIC SUBNET (AZ-b) · 10.0.2
             </text>
 
-            {/* LEVEL 2 & 3: Single EC2 Web Server in Public Subnet */}
+            {/* LEVEL 2 & 3: Single EC2 Web Server in Public Subnet (Reactive to Burst Load) */}
             {(level === 2 || level === 3) && (
               <g>
                 <rect
-                  x="310"
-                  y="365"
-                  width="220"
-                  height="68"
+                  x="300"
+                  y="362"
+                  width="240"
+                  height="76"
                   rx="8"
-                  fill="rgba(12,18,26,0.96)"
-                  stroke={TONE.teal}
-                  strokeWidth="1.4"
+                  fill={cpu > 70 ? 'rgba(255,93,93,0.08)' : 'rgba(12,18,26,0.96)'}
+                  stroke={cpu > 70 ? TONE.red : TONE.teal}
+                  strokeWidth={cpu > 70 ? 2 : 1.4}
                 />
-                <text x="325" y="386" fontSize="10.5" fontWeight="700" fill={INK}>
-                  EC2: cafe-web-server
+                {cpu > 70 && (
+                  <g transform="translate(300, 338)">
+                    <rect width="240" height="20" rx="4" fill="#240c10" stroke={TONE.red} strokeWidth="1.2" />
+                    <text x="120" y="13.5" textAnchor="middle" fontSize="8" fontWeight="800" fill={TONE.red}>
+                      ⚠️ CPU OVERLOAD: {cpu.toFixed(0)}% · NO AUTO SCALING
+                    </text>
+                  </g>
+                )}
+                <text x="315" y="382" fontSize="10.5" fontWeight="700" fill={INK}>
+                  EC2: cafe-web-server {cpu > 70 ? '(BOTTLENECK)' : ''}
                 </text>
-                <text x="325" y="402" fontSize="9" fill={MUTED}>
-                  t3.micro · Public IP 54.210.x.x
+                <text x="315" y="398" fontSize="9" fill={cpu > 70 ? TONE.red : MUTED}>
+                  t3.micro · 1 vCPU · {cpu > 70 ? `CPU: ${cpu.toFixed(0)}% (Saturated)` : 'Single Host (0 Redundancy)'}
                 </text>
-                <text x="325" y="420" fontSize="8.5" fontWeight="700" fill={level === 2 ? TONE.amber : TONE.teal}>
+                <text x="315" y="414" fontSize="8.5" fill={cpu > 70 ? TONE.red : FAINT}>
+                  {cpu > 70 ? `⚠️ Latency: ${latency}ms · Queuing Requests` : `Latency: ${latency}ms · Baseline Load`}
+                </text>
+                <text x="315" y="430" fontSize="8" fontWeight="700" fill={level === 2 ? TONE.amber : TONE.teal}>
                   {level === 2 ? 'App + Local MySQL (same host)' : 'Dynamic App (Remote RDS)'}
                 </text>
               </g>
@@ -620,7 +631,7 @@ export function AwsCafeTopology({
                   cafe-alb · internet-facing · Dual-AZ Target Group
                 </text>
                 <text x="590" y="422" textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
-                  ALB-SG: Ingress Port 80/443 (0.0.0.0/0) · distributes 50/50
+                  ALB-SG: Port 80/443 · Balances 50/50 across {instanceCount} ASG instances
                 </text>
               </g>
             )}
@@ -667,22 +678,49 @@ export function AwsCafeTopology({
                 height="98"
                 rx="9"
                 fill="rgba(12,18,26,0.96)"
-                stroke={TONE.teal}
+                stroke={instanceCount > 2 ? TONE.amber : TONE.teal}
                 strokeWidth={level >= 4 ? 1.4 : 1}
               />
               <text x="260" y="520" fontSize="10.5" fontWeight="700" fill={INK}>
                 cafe-web-1a (ASG instance)
               </text>
-              <text x="260" y="538" fontSize="9" fill={MUTED}>
-                t3.micro · Private IP 10.0.11.24
+              <text x="260" y="538" fontSize="9" fill={instanceCount > 2 ? TONE.amber : MUTED}>
+                {instanceCount === 2
+                  ? 't3.micro · Private IP 10.0.11.24'
+                  : `⚡ Scaled: ${Math.ceil(instanceCount / 2)} instances active in AZ-a`}
               </text>
               <text x="260" y="556" fontSize="8.5" fill={FAINT}>
-                HTTP :8080 · Health: 200 OK
+                HTTP :8080 · Health: 200 OK · CPU: {cpu.toFixed(0)}%
               </text>
               <text x="260" y="579" fontSize="8.5" fontWeight="700" fill={TONE.teal}>
                 EC2-SG: allows :8080 from ALB-SG only
               </text>
             </g>
+
+            {/* Live Auto Scaling State Badge (Between AZ-a & AZ-b) */}
+            {level >= 4 && (
+              <g transform="translate(545, 532)">
+                <rect
+                  width="100"
+                  height="30"
+                  rx="6"
+                  fill="#0a121d"
+                  stroke={instanceCount > 2 ? TONE.amber : TONE.teal}
+                  strokeWidth="1.2"
+                />
+                <circle cx="12" cy="15" r="3.5" fill={instanceCount > 2 ? TONE.amber : TONE.teal}>
+                  {instanceCount > 2 && (
+                    <animate attributeName="opacity" values="1;0.3;1" dur="1.2s" repeatCount="indefinite" />
+                  )}
+                </circle>
+                <text x="56" y="14" textAnchor="middle" fontSize="7.5" fontWeight="800" fill={instanceCount > 2 ? TONE.amber : TONE.teal}>
+                  {instanceCount > 2 ? `⚡ SCALED: ${instanceCount} NODES` : 'ASG: 2 NODES (MIN)'}
+                </text>
+                <text x="56" y="24" textAnchor="middle" fontSize="6.5" fill={MUTED}>
+                  {instanceCount > 2 ? 'TargetTracking 60%' : 'Baseline Capacity'}
+                </text>
+              </g>
+            )}
 
             {/* EC2 Instance in AZ-b */}
             <g opacity={level >= 4 ? 1 : 0.3}>
@@ -693,17 +731,19 @@ export function AwsCafeTopology({
                 height="98"
                 rx="9"
                 fill="rgba(12,18,26,0.96)"
-                stroke={TONE.teal}
+                stroke={instanceCount > 2 ? TONE.amber : TONE.teal}
                 strokeWidth={level >= 4 ? 1.4 : 1}
               />
               <text x="665" y="520" fontSize="10.5" fontWeight="700" fill={level >= 4 ? INK : FAINT}>
                 cafe-web-1b (ASG instance)
               </text>
-              <text x="665" y="538" fontSize="9" fill={MUTED}>
-                t3.micro · Private IP 10.0.12.38
+              <text x="665" y="538" fontSize="9" fill={instanceCount > 2 ? TONE.amber : MUTED}>
+                {instanceCount === 2
+                  ? 't3.micro · Private IP 10.0.12.38'
+                  : `⚡ Scaled: ${Math.floor(instanceCount / 2)} instances active in AZ-b`}
               </text>
               <text x="665" y="556" fontSize="8.5" fill={FAINT}>
-                HTTP :8080 · Health: 200 OK
+                HTTP :8080 · Health: 200 OK · CPU: {cpu.toFixed(0)}%
               </text>
               <text x="665" y="579" fontSize="8.5" fontWeight="700" fill={level >= 4 ? TONE.teal : FAINT}>
                 EC2-SG: allows :8080 from ALB-SG only
@@ -949,6 +989,144 @@ export function AwsCafeTopology({
             <FlowLine key={f.id} flow={f} index={i} />
           ))}
         </svg>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3b. Traffic Burst & Auto Scaling Dynamics Panel                          */}
+      {/* ========================================================================= */}
+      <div className="scaling-dynamics-panel" style={{
+        marginTop: '1.25rem',
+        padding: '1.25rem',
+        background: 'rgba(11, 17, 25, 0.95)',
+        border: '1px solid var(--line-soft)',
+        borderRadius: '12px',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <span className="control-label" style={{ display: 'block', fontSize: '10px', color: 'var(--amber)', letterSpacing: '0.1em' }}>
+              TRAFFIC BURST &amp; AUTO SCALING BEHAVIOR
+            </span>
+            <strong style={{ fontSize: '1.05rem', color: 'var(--text)' }}>
+              {level < 4
+                ? `Level 0${level}: Single Host Architecture · Capacity Under Burst Pressure`
+                : `Level 0${level}: Multi-AZ Elastic Auto Scaling Group (2 to 6 Instances)`}
+            </strong>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--muted)', fontFamily: 'var(--mono)' }}>
+              Simulate Spike:
+            </span>
+            <button
+              type="button"
+              className="button step-btn primary"
+              onClick={onTrafficBurst}
+              style={{ fontSize: '11px', padding: '6px 14px' }}
+            >
+              ⚡ Traffic Burst (+18 load)
+            </button>
+            <button
+              type="button"
+              className="button step-btn"
+              onClick={onResetTraffic}
+              style={{ fontSize: '11px', padding: '6px 12px' }}
+            >
+              ↺ Reset (38 load)
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          {/* Card 1: Real-Time Load & Telemetry */}
+          <div style={{ padding: '1rem', background: 'rgba(15, 23, 34, 0.8)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--sky)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Current Load Telemetry
+            </span>
+            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Traffic Demand:</span>
+                <strong style={{ color: traffic > 60 ? 'var(--amber)' : 'var(--teal)', fontFamily: 'var(--mono)' }}>
+                  {traffic}% ({requests} req/min)
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Web Tier Nodes:</span>
+                <strong style={{ color: 'var(--text)', fontFamily: 'var(--mono)' }}>
+                  {level < 4 ? '1 instance (fixed)' : `${instanceCount} instances (elastic)`}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>Average CPU Utilization:</span>
+                <strong style={{ color: cpu > 80 ? 'var(--red)' : cpu > 60 ? 'var(--amber)' : 'var(--teal)', fontFamily: 'var(--mono)' }}>
+                  {cpu.toFixed(0)}% {cpu > 80 ? '⚠️ High Load' : '● Healthy'}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                <span style={{ color: 'var(--muted)' }}>ALB / Target Latency:</span>
+                <strong style={{ color: latency > 150 ? 'var(--red)' : 'var(--teal)', fontFamily: 'var(--mono)' }}>
+                  {latency}ms {latency > 150 ? '⚠️ Degraded' : '● Fast'}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Single EC2 vs Auto Scaling Behavior */}
+          <div style={{
+            padding: '1rem',
+            background: level < 4 && cpu > 70 ? 'rgba(255, 93, 93, 0.05)' : 'rgba(15, 23, 34, 0.8)',
+            borderRadius: '8px',
+            border: `1px solid ${level < 4 && cpu > 70 ? 'rgba(255, 93, 93, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+          }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: level < 4 ? 'var(--amber)' : 'var(--teal)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {level < 4 ? 'Single EC2 Burst Response (Level 01–03)' : 'Auto Scaling Group Response (Level 04–06)'}
+            </span>
+            <div style={{ marginTop: '0.6rem', fontSize: '11px', lineHeight: 1.6, color: 'var(--muted)' }}>
+              {level < 4 ? (
+                <>
+                  <p style={{ margin: '0 0 6px' }}>
+                    <strong style={{ color: 'var(--text)' }}>Bottleneck Vulnerability:</strong> When traffic spikes, 100% of user requests hit a single <code>t3.micro</code> host.
+                  </p>
+                  <p style={{ margin: 0, color: cpu > 70 ? 'var(--red)' : 'var(--muted)' }}>
+                    {cpu > 70
+                      ? '⚠️ Warning: CPU is currently saturated! Without an Auto Scaling Group, incoming connections queue up in Linux backlog, resulting in HTTP 504 timeouts and dropped orders.'
+                      : 'Because there is no Auto Scaling Group or load balancer, any unexpected marketing push or lunchtime rush risks crashing the web server process.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: '0 0 6px' }}>
+                    <strong style={{ color: 'var(--teal)' }}>Elastic Horizontal Scaling:</strong> CloudWatch continuously tracks <code>ASGAverageCPUUtilization</code> (target: 60%).
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    When traffic burst pushes CPU above 60%, the ASG automatically scales from 2 to <strong>{instanceCount} instances</strong> across <code>us-east-1a</code> and <code>us-east-1b</code>. Latency stays stable at <strong>{latency}ms</strong>.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3: CloudWatch Policy & Failure Recovery */}
+          <div style={{ padding: '1rem', background: 'rgba(15, 23, 34, 0.8)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--violet)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Policy &amp; Self-Healing Rules
+            </span>
+            <ul style={{ margin: '0.6rem 0 0', paddingLeft: '1.2rem', fontSize: '11px', lineHeight: 1.6, color: 'var(--muted)' }}>
+              {level < 4 ? (
+                <>
+                  <li><strong>Scaling:</strong> None (manual instance resize required, causing downtime).</li>
+                  <li><strong>Health Check:</strong> Basic ping only; crashed processes cannot self-heal.</li>
+                  <li><strong>Next Step:</strong> Evolve to Level 04 to add ALB + Auto Scaling Group.</li>
+                </>
+              ) : (
+                <>
+                  <li><strong>Min / Max Capacity:</strong> 2 instances (baseline HA) to 6 instances (peak).</li>
+                  <li><strong>Target Tracking:</strong> Scales out dynamically when CPU &gt; 60%.</li>
+                  <li><strong>ELB Health Checks:</strong> Unhealthy instances automatically replaced in &lt; 90s.</li>
+                  <li><strong>Scale-In Cooldown:</strong> 300s timer prevents scaling thrashing during fluctuating load.</li>
+                </>
+              )}
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* ========================================================================= */}
