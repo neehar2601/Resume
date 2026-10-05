@@ -257,6 +257,65 @@ export function CafeWebsiteSandbox() {
                   <div className="arch-badge">{transitioning ? 'UPDATING DESIGN' : 'SIMULATION READY'}</div>
                 </div>
 
+                {/* Stage Evolution & Simulation Buttons under Simplified View */}
+                <div className="simplified-controls-bar">
+                  <div className="simplified-stage-row">
+                    <span className="control-label">ARCHITECTURE STAGE:</span>
+                    <div className="button-group step-group">
+                      {([1, 2, 3, 4, 5, 6] as ArchitectureLevel[]).map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          className={`button step-btn ${level === lvl ? 'primary' : ''}`}
+                          onClick={() => evolveTo(lvl)}
+                        >
+                          {lvl === 1 && '01 · S3'}
+                          {lvl === 2 && '02 · EC2'}
+                          {lvl === 3 && '03 · RDS'}
+                          {lvl === 4 && '04 · ALB+ASG'}
+                          {lvl === 5 && '05 · Serverless'}
+                          {lvl === 6 && '06 · CloudFormation'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="simplified-actions-row">
+                    <button
+                      type="button"
+                      className="button step-btn"
+                      onClick={runTrafficBurst}
+                      title="Simulate sudden traffic spike (+18 load)"
+                    >
+                      ⚡ Burst Traffic
+                    </button>
+                    {hasReporting && (
+                      <button
+                        type="button"
+                        className="button step-btn primary"
+                        onClick={runLambdaReport}
+                        title="DevOps Pipeline Test: Execute on-demand test event & inspect serverless trace"
+                      >
+                        🧪 Test Pipeline &amp; Trace ({reportRuns})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button step-btn"
+                      onClick={resetTraffic}
+                      title="Reset traffic to baseline (38 load)"
+                    >
+                      ↺ Reset
+                    </button>
+                  </div>
+                </div>
+
+                {/* Active Level Stage Explainer Badge */}
+                <div className="simplified-explainer-banner">
+                  <span className="stage-step-pill">{current.short}</span>
+                  <strong>{current.title}</strong>
+                  <p>{current.problem} ➔ {current.solved}</p>
+                </div>
+
                 {level < 6 ? (
                   <CurrentArchitecture
                     level={level}
